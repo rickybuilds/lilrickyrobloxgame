@@ -8,6 +8,7 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local RobberyConfig = require(ReplicatedStorage.Shared.Config.RobberyConfig)
 local EconomyService = require(script.Parent.EconomyService)
 local PlayerStateService = require(script.Parent.PlayerStateService)
+local WantedService = require(script.Parent.WantedService)
 
 local RobberyService = {}
 local started = false
@@ -119,6 +120,7 @@ local function completeRobbery(store: StoreRuntime)
 		activeStoreByPlayer[player] = nil
 		local balance = EconomyService.AwardMoney(player, store.Reward, `robbery:{store.Id}`)
 		if balance ~= nil then
+			WantedService.ReportCrime(player, "StoreRobbery")
 			setTemporaryPlayerStatus(player, `Robbery complete! +${store.Reward}`)
 		end
 	end

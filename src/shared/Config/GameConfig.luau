@@ -4,12 +4,13 @@
 -- Gameplay code should read this table instead of scattering magic numbers.
 local GameConfig = {
 	GameName = "Ricky's City",
-	WorldVersion = 2,
+	WorldVersion = 3,
 
 	PlayerDefaults = {
 		Money = 0,
 		WantedLevel = 0,
 		RobberyStatus = "Explore the city",
+		Arrested = false,
 	},
 
 	Wanted = {
@@ -21,6 +22,7 @@ local GameConfig = {
 		Money = "Money",
 		WantedLevel = "WantedLevel",
 		RobberyStatus = "RobberyStatus",
+		Arrested = "Arrested",
 	},
 
 	World = {

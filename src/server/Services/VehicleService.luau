@@ -27,6 +27,7 @@ type SeatAssignment = {
 
 local VehicleService = {}
 local records: { [Model]: VehicleRecord } = {}
+local npcVehicles: { [Model]: boolean } = {}
 local seatAssignments: { [Player]: SeatAssignment } = {}
 local lastExitTimes: { [Player]: number } = {}
 local lastParkRequestTimes: { [Player]: number } = {}
@@ -446,37 +447,41 @@ local function findSafeExitCFrame(record: VehicleRecord, character: Model): CFra
 	return root.CFrame * CFrame.new(-7, 4, 0)
 end
 
-local function exitVehicle(player: Player)
+local function exitVehicle(player: Player, forced: boolean?): boolean
 	local assignment = seatAssignments[player]
 	if not assignment then
-		return
+		return false
 	end
 	local now = os.clock()
-	if now - (lastExitTimes[player] or 0) < VehicleConfig.Interaction.ExitCooldown then
-		return
+	if not forced and now - (lastExitTimes[player] or 0) < VehicleConfig.Interaction.ExitCooldown then
+		return false
 	end
 	lastExitTimes[player] = now
 
 	local humanoid = getPlayerHumanoid(player)
 	if not humanoid or assignment.Seat.Occupant ~= humanoid then
-		return
+		return false
 	end
 
 	local character = player.Character
 	if not character then
-		return
+		return false
 	end
 
 	local exitCFrame = findSafeExitCFrame(assignment.Record, character)
 	assignment.Record.Model:SetAttribute(VehicleConfig.Attributes.Parked, true)
 	humanoid.Sit = false
 	humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+	if forced then
+		return true
+	end
 	task.defer(function()
 		RunService.Heartbeat:Wait()
 		if character.Parent then
 			character:PivotTo(exitCFrame)
 		end
 	end)
+	return true
 end
 
 local function setVehicleParked(player: Player, requestedParked: unknown)
@@ -574,6 +579,112 @@ function VehicleService.DamageVehicle(vehicle: Model, amount: number): number
 	return newHealth
 end
 
+function VehicleService.ForceExit(player: Player): boolean
+	return exitVehicle(player, true)
+end
+
+local function markPoliceVisual(part: BasePart)
+	part:SetAttribute("PoliceDriverVisual", true)
+end
+
+function VehicleService.CreatePoliceVehicle(spawnCFrame: CFrame, parent: Instance): Model
+	assert(started, "VehicleService must be started before creating NPC vehicles")
+
+	local record = createStarterCar(spawnCFrame, parent)
+	local vehicle = record.Model
+	vehicle.Name = "PoliceCruiser"
+	vehicle:SetAttribute("IsPoliceVehicle", true)
+	vehicle:SetAttribute("PoliceTargetUserId", 0)
+
+	local driverAnchor = record.DriverPrompt.Parent
+	if driverAnchor then
+		driverAnchor:Destroy()
+	end
+	local passengerAnchor = record.PassengerPrompt.Parent
+	if passengerAnchor then
+		passengerAnchor:Destroy()
+	end
+
+	local white = Color3.fromRGB(232, 236, 242)
+	local navy = Color3.fromRGB(35, 75, 135)
+	for _, descendant in vehicle:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			if descendant.Name == "LowerBody" or descendant.Name == "Roof" then
+				descendant.Color = white
+			elseif descendant.Name == "Hood"
+				or descendant.Name == "Trunk"
+				or descendant.Name == "LeftPillar"
+				or descendant.Name == "RightPillar"
+			then
+				descendant.Color = navy
+			end
+		end
+	end
+
+	local redLight = makeVisualPart(
+		record.Root,
+		"SirenRed",
+		Vector3.new(2.2, 0.45, 1),
+		CFrame.new(-1.2, 4.95, 0.6),
+		Color3.fromRGB(255, 55, 55),
+		Enum.Material.Neon,
+		vehicle
+	)
+	redLight:SetAttribute("PoliceSirenLight", "Red")
+	local blueLight = makeVisualPart(
+		record.Root,
+		"SirenBlue",
+		Vector3.new(2.2, 0.45, 1),
+		CFrame.new(1.2, 4.95, 0.6),
+		Color3.fromRGB(55, 135, 255),
+		Enum.Material.Neon,
+		vehicle
+	)
+	blueLight:SetAttribute("PoliceSirenLight", "Blue")
+
+	local torso = makeVisualPart(record.Root, "PoliceDriverTorso", Vector3.new(1.8, 2, 1), CFrame.new(-1.7, 3.25, 0.65), navy, Enum.Material.SmoothPlastic, vehicle)
+	local head = makeVisualPart(record.Root, "PoliceDriverHead", Vector3.new(1.4, 1.4, 1.4), CFrame.new(-1.7, 4.85, 0.65), Color3.fromRGB(241, 190, 145), Enum.Material.SmoothPlastic, vehicle)
+	local cap = makeVisualPart(record.Root, "PoliceDriverCap", Vector3.new(1.7, 0.35, 1.7), CFrame.new(-1.7, 5.55, 0.65), navy, Enum.Material.SmoothPlastic, vehicle)
+	markPoliceVisual(torso)
+	markPoliceVisual(head)
+	markPoliceVisual(cap)
+
+	npcVehicles[vehicle] = true
+	local canSetOwnership = record.Root:CanSetNetworkOwnership()
+	if canSetOwnership then
+		record.Root:SetNetworkOwner(nil)
+	end
+	return vehicle
+end
+
+function VehicleService.StepNpcVehicle(
+	vehicle: Model,
+	controls: VehicleDynamics.ControlState,
+	deltaTime: number
+): number
+	assert(npcVehicles[vehicle] == true, "StepNpcVehicle received an unknown NPC vehicle")
+	return VehicleDynamics.Step(vehicle, controls, deltaTime)
+end
+
+function VehicleService.SetNpcDriverVisible(vehicle: Model, visible: boolean)
+	if not npcVehicles[vehicle] then
+		return
+	end
+	for _, descendant in vehicle:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant:GetAttribute("PoliceDriverVisual") == true then
+			descendant.Transparency = if visible then 0 else 1
+		end
+	end
+end
+
+function VehicleService.DestroyNpcVehicle(vehicle: Model)
+	if not npcVehicles[vehicle] then
+		return
+	end
+	npcVehicles[vehicle] = nil
+	vehicle:Destroy()
+end
+
 function VehicleService.Start()
 	assert(not started, "VehicleService.Start may only be called once")
 	started = true
@@ -588,7 +699,9 @@ function VehicleService.Start()
 		exitVehicleRemote.Name = "ExitVehicle"
 		exitVehicleRemote.Parent = remotes
 	end
-	exitVehicleRemote.OnServerEvent:Connect(exitVehicle)
+	exitVehicleRemote.OnServerEvent:Connect(function(player)
+		exitVehicle(player, false)
+	end)
 
 	local existingParkRemote = remotes:FindFirstChild("SetVehicleParked")
 	if existingParkRemote then

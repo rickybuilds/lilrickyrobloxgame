@@ -14,6 +14,7 @@ local function initializePlayer(player: Player)
 	player:SetAttribute(GameConfig.Attributes.Money, GameConfig.PlayerDefaults.Money)
 	player:SetAttribute(GameConfig.Attributes.WantedLevel, GameConfig.PlayerDefaults.WantedLevel)
 	player:SetAttribute(GameConfig.Attributes.RobberyStatus, GameConfig.PlayerDefaults.RobberyStatus)
+	player:SetAttribute(GameConfig.Attributes.Arrested, GameConfig.PlayerDefaults.Arrested)
 
 	-- Point every player at our named spawn. This prevents a leftover SpawnLocation
 	-- from the Studio Baseplate template from being selected at random.
@@ -45,6 +46,14 @@ function PlayerStateService.AddMoney(player: Player, amount: number): number
 	assert(amount >= 0 and amount % 1 == 0, "Money awards must be non-negative whole numbers")
 
 	local newBalance = PlayerStateService.GetMoney(player) + amount
+	player:SetAttribute(GameConfig.Attributes.Money, newBalance)
+	return newBalance
+end
+
+function PlayerStateService.RemoveMoney(player: Player, amount: number): number
+	assert(amount >= 0 and amount % 1 == 0, "Money deductions must be non-negative whole numbers")
+
+	local newBalance = math.max(0, PlayerStateService.GetMoney(player) - amount)
 	player:SetAttribute(GameConfig.Attributes.Money, newBalance)
 	return newBalance
 end

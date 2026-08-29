@@ -104,7 +104,7 @@ Test checklist:
 - Two players cannot claim the driver seat simultaneously.
 - Vehicle behavior is acceptable in a two-player server.
 
-### Milestone 3 — Store robbery and economy (implemented; awaiting Studio acceptance test)
+### Milestone 3 — Store robbery and economy (stable)
 
 Add a server-validated register prompt, robbery countdown, cancellation on leaving the area, payout, store cooldown, and HUD status.
 
@@ -119,6 +119,8 @@ Test checklist:
 ### Milestone 4 — Wanted level and basic police pursuit
 
 Add wanted severity, one police response vehicle/NPC, sensible station/patrol spawning, target selection, vehicle pursuit, on-foot pursuit, and a basic arrest result.
+
+Current step: **Full Milestone 4 implemented; awaiting Studio acceptance test.**
 
 Test checklist:
 

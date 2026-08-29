@@ -261,6 +261,34 @@ local function createPoliceStation(parent: Instance)
 	station:SetAttribute("ResponseOrigin", true)
 end
 
+local function createJail(parent: Instance)
+	local jail = Instance.new("Model")
+	jail.Name = "Jail"
+	jail.Parent = parent
+
+	local surfaceY = GameConfig.World.DrivingSurfaceY
+	local center = Vector3.new(-194, surfaceY, 135)
+	local wallColor = Color3.fromRGB(105, 116, 132)
+
+	makePart({ Name = "JailFloor", Size = Vector3.new(18, 0.4, 18), Position = center + Vector3.new(0, 0.2, 0), Color = Color3.fromRGB(125, 132, 143), Material = Enum.Material.Concrete, Parent = jail })
+	makePart({ Name = "BackWall", Size = Vector3.new(18, 9, 1), Position = center + Vector3.new(0, 4.5, 8.5), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
+	makePart({ Name = "LeftWall", Size = Vector3.new(1, 9, 18), Position = center + Vector3.new(-8.5, 4.5, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
+	makePart({ Name = "RightWall", Size = Vector3.new(1, 9, 18), Position = center + Vector3.new(8.5, 4.5, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
+	makePart({ Name = "Roof", Size = Vector3.new(18, 1, 18), Position = center + Vector3.new(0, 9, 0), Color = wallColor, Material = Enum.Material.Metal, Parent = jail })
+
+	for offset = -7, 7, 2 do
+		makePart({ Name = "FrontBar", Size = Vector3.new(0.35, 8, 0.35), Position = center + Vector3.new(offset, 4, -8.5), Color = Color3.fromRGB(55, 62, 72), Material = Enum.Material.Metal, Parent = jail })
+	end
+
+	local sign = makePart({ Name = "JailSign", Size = Vector3.new(12, 3, 0.5), Position = center + Vector3.new(0, 7, -8.8), Color = Color3.fromRGB(35, 75, 135), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = jail })
+	addSurfaceLabel(sign, "JAIL", Enum.NormalId.Front)
+
+	local jailSpawn = makePart({ Name = "JailSpawn", Size = Vector3.new(3, 0.2, 3), Position = center + Vector3.new(0, 0.6, 0), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
+	jailSpawn:SetAttribute("SpawnType", "Jail")
+	local releaseSpawn = makePart({ Name = "ReleaseSpawn", Size = Vector3.new(3, 0.2, 3), Position = center + Vector3.new(0, 0.6, -13), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
+	releaseSpawn:SetAttribute("SpawnType", "PoliceRelease")
+end
+
 local function createSpawns(parent: Instance)
 	local spawns = Instance.new("Folder")
 	spawns.Name = "Spawns"
@@ -302,6 +330,7 @@ local function createSpawns(parent: Instance)
 			Color = Color3.fromRGB(30, 100, 230),
 			Transparency = 1,
 			CanCollide = false,
+			CanQuery = false,
 			Parent = policeSpawns,
 		})
 		marker:SetAttribute("SpawnType", "PoliceResponse")
@@ -339,6 +368,7 @@ function WorldService.Start()
 	landmarks.Parent = world
 	createConvenienceStore(landmarks)
 	createPoliceStation(landmarks)
+	createJail(landmarks)
 	createSpawns(world)
 
 	Lighting.ClockTime = 14

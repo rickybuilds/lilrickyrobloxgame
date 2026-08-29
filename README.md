@@ -2,18 +2,18 @@
 
 An age-appropriate Roblox open-world driving and cops-vs-criminals game being built one playable milestone at a time.
 
-## Current build: Milestone 3 — Quick Stop Robbery Test Build
+## Current build: Milestone 4 — Police Pursuit Test Build
 
-Milestones 1 and 2 are the stable baseline. The current test build adds:
+Milestones 1–3 and the 4A wanted foundation are the stable baseline. The current test build adds:
 
-- One server-validated robbery at the Quick Stop register
-- An eight-second stay-near-the-register countdown
-- Cancellation with no payout when the robber leaves early
-- A single server-issued `$250` reward on success
-- A shared 20-second store cooldown
-- Robbery progress in the existing HUD and over the register
+- Police dispatch from reserved police-station response markers
+- One independently targeted police unit per wanted player
+- A server-driven police cruiser using the existing arcade chassis
+- Vehicle pursuit, obstacle checks, stuck recovery, and flashing lights
+- On-foot officer pathfinding and reboarding behavior
+- Server-validated arrest, robbery-money confiscation, jail, and release
 
-It intentionally does **not** raise wanted level or spawn police yet. Wanted escalation and police pursuit are Milestone 4, after this robbery/economy layer passes testing.
+Police have perfect suspect knowledge in this milestone. Sight, search, escape, and wanted decay intentionally remain Milestone 5.
 
 ## Open it in Roblox Studio
 
@@ -27,15 +27,15 @@ This project uses [Rojo](https://rojo.space/) so the readable Luau source files 
 
 The city is created when the server starts. It appears under `Workspace > GameWorld` while playing.
 
-## Milestone 3 test checklist
+## Milestone 4 test checklist
 
-- [ ] The Quick Stop register shows **READY** and a **Rob Register** prompt.
-- [ ] Starting a robbery changes the HUD to an eight-second countdown.
-- [ ] Walking away early cancels the robbery and leaves money at `$0`.
-- [ ] Staying near the register completes it and awards exactly `$250` once.
-- [ ] The register enters a visible 20-second cooldown, then returns to **READY**.
-- [ ] In a two-client test, only one player can own the active robbery.
-- [ ] The stable city, car, seats, controls, vehicle HUD, and respawn still work.
+- [ ] Completing a robbery raises wanted to level 2 and dispatches police from the station.
+- [ ] The police cruiser pursues the correct player and never spawns beside them.
+- [ ] When the suspect stops and exits, the officer dismounts and pursues on foot.
+- [ ] A sustained close-range capture arrests rather than kills the player.
+- [ ] Arrest clears wanted, confiscates `$50` from the first `$250`, and jails the player for five seconds.
+- [ ] Two wanted clients receive independently targeted units and arrest results.
+- [ ] The stable city, player car, robbery, economy, HUD, and respawn still work.
 - [ ] The Output window has no red errors.
 
-See [docs/MILESTONE_3_TEST.md](docs/MILESTONE_3_TEST.md) for the complete test procedure.
+See [docs/MILESTONE_4_TEST.md](docs/MILESTONE_4_TEST.md) for the complete test procedure.
