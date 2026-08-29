@@ -15,6 +15,8 @@ local function initializePlayer(player: Player)
 	player:SetAttribute(GameConfig.Attributes.WantedLevel, GameConfig.PlayerDefaults.WantedLevel)
 	player:SetAttribute(GameConfig.Attributes.RobberyStatus, GameConfig.PlayerDefaults.RobberyStatus)
 	player:SetAttribute(GameConfig.Attributes.Arrested, GameConfig.PlayerDefaults.Arrested)
+	player:SetAttribute(GameConfig.Attributes.PoliceState, GameConfig.PlayerDefaults.PoliceState)
+	player:SetAttribute(GameConfig.Attributes.EscapeTimeRemaining, GameConfig.PlayerDefaults.EscapeTimeRemaining)
 
 	-- Point every player at our named spawn. This prevents a leftover SpawnLocation
 	-- from the Studio Baseplate template from being selected at random.
@@ -72,6 +74,15 @@ end
 function PlayerStateService.SetRobberyStatus(player: Player, status: string)
 	assert(#status <= 80, "Robbery status is too long")
 	player:SetAttribute(GameConfig.Attributes.RobberyStatus, status)
+end
+
+function PlayerStateService.SetPoliceState(player: Player, state: string, escapeTimeRemaining: number?)
+	assert(#state > 0 and #state <= 24, "Police state must be a short non-empty string")
+	player:SetAttribute(GameConfig.Attributes.PoliceState, state)
+	player:SetAttribute(
+		GameConfig.Attributes.EscapeTimeRemaining,
+		math.max(0, math.ceil(escapeTimeRemaining or 0))
+	)
 end
 
 return table.freeze(PlayerStateService)

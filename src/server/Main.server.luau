@@ -22,4 +22,4 @@ ArrestService.Start()
 RobberyService.Start()
 PoliceService.Start()
 
-print("Ricky's City server started: Milestone 4 police pursuit test build")
+print("Ricky's City server started: Milestone 5 escape and wanted decay test build")

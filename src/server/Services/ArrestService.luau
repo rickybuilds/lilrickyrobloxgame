@@ -154,12 +154,14 @@ function ArrestService.Arrest(player: Player): boolean
 	end
 	activeArrests[player] = cell
 	player:SetAttribute(GameConfig.Attributes.Arrested, true)
+	PlayerStateService.SetPoliceState(player, "Clear", 0)
 	VehicleService.ForceExit(player)
 
 	local confiscated = EconomyService.ConfiscateRobberyProceeds(
 		player,
 		PoliceConfig.Arrest.ConfiscationFraction
 	)
+	EconomyService.SecureRobberyProceeds(player)
 	WantedService.ClearWanted(player)
 	placeInJail(player)
 

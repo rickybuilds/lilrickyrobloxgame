@@ -8,6 +8,14 @@ local responseSpeeds: { [number]: number } = {
 	[5] = 80,
 }
 
+local escapeSecondsPerLevel: { [number]: number } = {
+	[1] = 8,
+	[2] = 10,
+	[3] = 12,
+	[4] = 14,
+	[5] = 16,
+}
+
 local PoliceConfig = {
 	Attributes = {
 		Arrested = "Arrested",
@@ -18,6 +26,7 @@ local PoliceConfig = {
 	Dispatch = {
 		MinimumSpawnDistance = 70,
 		RetryInterval = 1,
+		MaximumTrackingTime = 18,
 	},
 
 	Vehicle = {
@@ -34,6 +43,23 @@ local PoliceConfig = {
 		PathRefreshInterval = 0.8,
 		WaypointReachedDistance = 3.5,
 		ReboardDistance = 8,
+	},
+
+	Search = {
+		SightCheckInterval = 0.2,
+		MaximumSightDistance = 130,
+		LostSightGrace = 2.5,
+		EscapeSecondsPerLevel = escapeSecondsPerLevel,
+		SweepRadius = 18,
+		SweepInterval = 3,
+		VehicleSpeed = 38,
+		ArrivalDistance = 16,
+	},
+
+	Return = {
+		ArrivalDistance = 12,
+		Timeout = 20,
+		VehicleSpeed = 34,
 	},
 
 	Arrest = {

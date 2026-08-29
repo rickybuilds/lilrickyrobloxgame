@@ -134,6 +134,8 @@ Test checklist:
 
 Add police sight/search state, escape timer, wanted decay, cleanup/return behavior, and final Phase 1 tuning.
 
+Status: **Implemented; awaiting Roblox Studio runtime validation.**
+
 Test checklist:
 
 - The escape timer starts only after police genuinely lose sight/range.

@@ -58,4 +58,19 @@ function EconomyService.ConfiscateRobberyProceeds(player: Player, fraction: numb
 	return confiscated
 end
 
+-- Escaping or completing an arrest resolves all remaining hot proceeds. The
+-- money stays in the player's balance, but a later unrelated arrest cannot
+-- confiscate it again.
+function EconomyService.SecureRobberyProceeds(player: Player): number
+	if player.Parent ~= Players then
+		return 0
+	end
+	local secured = EconomyService.GetRobberyProceeds(player)
+	robberyProceeds[player] = 0
+	if secured > 0 then
+		print(`Economy: secured ${secured} of robbery proceeds for {player.Name}`)
+	end
+	return secured
+end
+
 return table.freeze(EconomyService)

@@ -56,4 +56,14 @@ function WantedService.ClearWanted(player: Player): number?
 	return PlayerStateService.SetWantedLevel(player, GameConfig.Wanted.MinimumLevel)
 end
 
+function WantedService.ReduceWanted(player: Player, amount: number): number?
+	assert(started, "WantedService must be started before wanted is reduced")
+	assert(amount > 0 and amount % 1 == 0, "Wanted reduction must be a positive whole number")
+	if player.Parent ~= Players then
+		return nil
+	end
+
+	return PlayerStateService.SetWantedLevel(player, WantedService.GetLevel(player) - amount)
+end
+
 return table.freeze(WantedService)

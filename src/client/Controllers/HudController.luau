@@ -95,12 +95,34 @@ function HudController.Start()
 
 	local function updateStatus()
 		local status = player:GetAttribute(GameConfig.Attributes.RobberyStatus)
-		statusLabel.Text = if typeof(status) == "string" then status else "Explore the city"
+		local policeState = player:GetAttribute(GameConfig.Attributes.PoliceState)
+		local escapeTime = player:GetAttribute(GameConfig.Attributes.EscapeTimeRemaining)
+		local wantedLevel = player:GetAttribute(GameConfig.Attributes.WantedLevel)
+		local arrested = player:GetAttribute(GameConfig.Attributes.Arrested)
+		local activityText = if typeof(status) == "string" then status else "Explore the city"
+
+		if arrested == true then
+			statusLabel.Text = activityText
+		elseif policeState == "Searching"
+			and typeof(wantedLevel) == "number"
+			and wantedLevel > 0
+		then
+			local remaining = if typeof(escapeTime) == "number" then math.max(0, math.ceil(escapeTime)) else 0
+			statusLabel.Text = `HIDDEN • Lose a star in {remaining}s`
+		elseif policeState == "Pursuit" and typeof(wantedLevel) == "number" and wantedLevel > 0 then
+			statusLabel.Text = "POLICE PURSUIT • Break line of sight!"
+		else
+			statusLabel.Text = activityText
+		end
 	end
 
 	player:GetAttributeChangedSignal(GameConfig.Attributes.Money):Connect(updateMoney)
 	player:GetAttributeChangedSignal(GameConfig.Attributes.WantedLevel):Connect(updateWanted)
 	player:GetAttributeChangedSignal(GameConfig.Attributes.RobberyStatus):Connect(updateStatus)
+	player:GetAttributeChangedSignal(GameConfig.Attributes.Arrested):Connect(updateStatus)
+	player:GetAttributeChangedSignal(GameConfig.Attributes.PoliceState):Connect(updateStatus)
+	player:GetAttributeChangedSignal(GameConfig.Attributes.EscapeTimeRemaining):Connect(updateStatus)
+	player:GetAttributeChangedSignal(GameConfig.Attributes.WantedLevel):Connect(updateStatus)
 
 	updateMoney()
 	updateWanted()

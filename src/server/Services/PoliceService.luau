@@ -10,6 +10,7 @@ local GameConfig = require(ReplicatedStorage.Shared.Config.GameConfig)
 local PoliceConfig = require(ReplicatedStorage.Shared.Config.PoliceConfig)
 local VehicleDynamics = require(ReplicatedStorage.Shared.Vehicle.VehicleDynamics)
 local ArrestService = require(script.Parent.ArrestService)
+local EconomyService = require(script.Parent.EconomyService)
 local PlayerStateService = require(script.Parent.PlayerStateService)
 local VehicleService = require(script.Parent.VehicleService)
 local WantedService = require(script.Parent.WantedService)
@@ -18,10 +19,12 @@ local PoliceService = {}
 local started = false
 
 type UnitState = "VehiclePursuit" | "FootPursuit" | "ReturningToVehicle"
+type AwarenessState = "Pursuit" | "Searching" | "Returning"
 
 type PoliceUnit = {
 	Target: Player,
 	State: UnitState,
+	Awareness: AwarenessState,
 	Vehicle: Model,
 	VehicleRoot: BasePart,
 	SpawnMarker: BasePart,
@@ -38,6 +41,19 @@ type PoliceUnit = {
 	ReverseUntil: number,
 	AvoidanceSign: number,
 	RaycastParams: RaycastParams,
+	SightRaycastParams: RaycastParams,
+	TargetVisible: boolean,
+	HasEstablishedContact: boolean,
+	DispatchStartedAt: number,
+	LastSightCheck: number,
+	LastSeenPosition: Vector3,
+	LastSeenAt: number,
+	HiddenSince: number?,
+	SearchDestination: Vector3,
+	NextSearchMoveAt: number,
+	SearchStep: number,
+	LastHudSecond: number,
+	ReturnStartedAt: number?,
 }
 
 local unitsByPlayer: { [Player]: PoliceUnit } = {}
@@ -51,6 +67,13 @@ local PARKED_CONTROLS: VehicleDynamics.ControlState = {
 	Brake = 1,
 	Handbrake = true,
 	Parked = true,
+}
+
+local SEARCH_OFFSETS = {
+	Vector3.new(1, 0, 0),
+	Vector3.new(0, 0, 1),
+	Vector3.new(-1, 0, 0),
+	Vector3.new(0, 0, -1),
 }
 
 local function horizontal(vector: Vector3): Vector3
@@ -68,6 +91,44 @@ local function getLivingTarget(player: Player): (Model?, Humanoid?, BasePart?)
 		return character, humanoid, nil
 	end
 	return character, humanoid, root
+end
+
+local function getSeatedVehicle(humanoid: Humanoid): Model?
+	local seat = humanoid.SeatPart
+	if not seat then
+		return nil
+	end
+	return seat:FindFirstAncestorWhichIsA("Model")
+end
+
+local function canSeeTarget(
+	unit: PoliceUnit,
+	targetCharacter: Model,
+	targetHumanoid: Humanoid,
+	targetRoot: BasePart
+): boolean
+	local observerRoot = unit.OfficerRoot or unit.VehicleRoot
+	local origin = observerRoot.Position + Vector3.new(0, 2, 0)
+	local targetPosition = targetRoot.Position + Vector3.new(0, 1.5, 0)
+	local offset = targetPosition - origin
+	if offset.Magnitude > PoliceConfig.Search.MaximumSightDistance then
+		return false
+	end
+
+	local exclusions: { Instance } = { unit.Vehicle }
+	if unit.Officer then
+		table.insert(exclusions, unit.Officer)
+	end
+	unit.SightRaycastParams.FilterDescendantsInstances = exclusions
+	local result = Workspace:Raycast(origin, offset, unit.SightRaycastParams)
+	if not result then
+		return true
+	end
+	if result.Instance:IsDescendantOf(targetCharacter) then
+		return true
+	end
+	local targetVehicle = getSeatedVehicle(targetHumanoid)
+	return targetVehicle ~= nil and result.Instance:IsDescendantOf(targetVehicle)
 end
 
 local function makeOfficerPart(
@@ -143,6 +204,15 @@ local function createOfficer(spawnCFrame: CFrame, parent: Instance): (Model, Hum
 end
 
 local function setSirenLights(unit: PoliceUnit, now: number)
+	if unit.Awareness == "Returning" then
+		for _, descendant in unit.Vehicle:GetDescendants() do
+			if descendant:IsA("BasePart") and descendant:GetAttribute("PoliceSirenLight") ~= nil then
+				descendant.Transparency = 0.65
+			end
+		end
+		return
+	end
+
 	local redVisible = math.floor(now * 5) % 2 == 0
 	for _, descendant in unit.Vehicle:GetDescendants() do
 		if descendant:IsA("BasePart") then
@@ -168,6 +238,45 @@ local function cleanupUnit(player: Player)
 		unit.Officer:Destroy()
 	end
 	VehicleService.DestroyNpcVehicle(unit.Vehicle)
+end
+
+local function resumePursuit(unit: PoliceUnit, targetPosition: Vector3, now: number, hasContact: boolean)
+	unit.Awareness = "Pursuit"
+	unit.TargetVisible = hasContact
+	unit.HasEstablishedContact = hasContact
+	unit.DispatchStartedAt = now
+	unit.LastSeenPosition = targetPosition
+	unit.LastSeenAt = now
+	unit.HiddenSince = nil
+	unit.SearchDestination = targetPosition
+	unit.LastHudSecond = -1
+	unit.ReturnStartedAt = nil
+	PlayerStateService.SetPoliceState(unit.Target, "Pursuit", 0)
+end
+
+local function beginSearch(unit: PoliceUnit, now: number)
+	if unit.Awareness == "Searching" then
+		return
+	end
+	unit.Awareness = "Searching"
+	unit.HiddenSince = now
+	unit.SearchDestination = unit.LastSeenPosition
+	unit.NextSearchMoveAt = 0
+	unit.SearchStep = 0
+	unit.LastHudSecond = -1
+	unit.ArrestStartedAt = nil
+	PlayerStateService.SetPoliceState(unit.Target, "Searching", 0)
+end
+
+local function beginReturn(unit: PoliceUnit, now: number)
+	if unit.Awareness == "Returning" then
+		return
+	end
+	unit.Awareness = "Returning"
+	unit.HiddenSince = nil
+	unit.ReturnStartedAt = now
+	unit.ArrestStartedAt = nil
+	PlayerStateService.SetPoliceState(unit.Target, "Clear", 0)
 end
 
 local function chooseResponseMarker(targetPosition: Vector3): BasePart?
@@ -220,11 +329,17 @@ local function ensureUnit(player: Player)
 	raycastParams.FilterDescendantsInstances = { vehicle, player.Character or vehicle }
 	raycastParams.IgnoreWater = true
 	raycastParams.RespectCanCollide = true
+	local sightRaycastParams = RaycastParams.new()
+	sightRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	sightRaycastParams.FilterDescendantsInstances = { vehicle }
+	sightRaycastParams.IgnoreWater = true
+	sightRaycastParams.RespectCanCollide = false
 
 	local now = os.clock()
 	local unit: PoliceUnit = {
 		Target = player,
 		State = "VehiclePursuit",
+		Awareness = "Pursuit",
 		Vehicle = vehicle,
 		VehicleRoot = vehicleRoot,
 		SpawnMarker = marker,
@@ -241,10 +356,24 @@ local function ensureUnit(player: Player)
 		ReverseUntil = 0,
 		AvoidanceSign = if player.UserId % 2 == 0 then 1 else -1,
 		RaycastParams = raycastParams,
+		SightRaycastParams = sightRaycastParams,
+		TargetVisible = false,
+		HasEstablishedContact = false,
+		DispatchStartedAt = now,
+		LastSightCheck = 0,
+		LastSeenPosition = targetRoot.Position,
+		LastSeenAt = now,
+		HiddenSince = nil,
+		SearchDestination = targetRoot.Position,
+		NextSearchMoveAt = 0,
+		SearchStep = 0,
+		LastHudSecond = -1,
+		ReturnStartedAt = nil,
 	}
 	unitsByPlayer[player] = unit
 	reservedMarkers[marker] = player
 	PlayerStateService.SetRobberyStatus(player, "Police dispatched from the station!")
+	PlayerStateService.SetPoliceState(player, "Pursuit", 0)
 end
 
 local function findGroundCFrame(position: Vector3, exclusions: { Instance }): CFrame
@@ -358,31 +487,25 @@ local function moveOfficer(unit: PoliceUnit, destination: Vector3, now: number)
 	end
 end
 
-local function updateVehiclePursuit(
+local function driveVehicleToPosition(
 	unit: PoliceUnit,
-	targetCharacter: Model,
-	targetHumanoid: Humanoid,
-	targetRoot: BasePart,
+	destination: Vector3,
+	speedLimit: number,
+	stopDistance: number,
 	deltaTime: number,
 	now: number
-)
-	local toTarget = horizontal(targetRoot.Position - unit.VehicleRoot.Position)
-	local distance = toTarget.Magnitude
+): (number, number)
+	local toDestination = horizontal(destination - unit.VehicleRoot.Position)
+	local distance = toDestination.Magnitude
+	local speed = horizontal(unit.VehicleRoot.AssemblyLinearVelocity).Magnitude
 	if distance < 0.001 then
 		VehicleService.StepNpcVehicle(unit.Vehicle, PARKED_CONTROLS, deltaTime)
-		return
+		return distance, speed
 	end
 
-	unit.RaycastParams.FilterDescendantsInstances = { unit.Vehicle, targetCharacter }
-	local direction = toTarget.Unit
+	local direction = toDestination.Unit
 	local localDirection = unit.VehicleRoot.CFrame:VectorToObjectSpace(direction)
 	local steering = math.clamp(localDirection.X * 2.2, -1, 1)
-	local speed = horizontal(unit.VehicleRoot.AssemblyLinearVelocity).Magnitude
-	local targetSpeed = horizontal(targetRoot.AssemblyLinearVelocity).Magnitude
-	local targetSeated = targetHumanoid.SeatPart ~= nil
-	local wantedLevel = WantedService.GetLevel(unit.Target)
-	local speedLimit = PoliceConfig.Vehicle.ResponseSpeeds[wantedLevel]
-		or PoliceConfig.Vehicle.ResponseSpeeds[GameConfig.Wanted.MaximumLevel]
 
 	if horizontal(unit.VehicleRoot.Position - unit.LastProgressPosition).Magnitude >= 4 then
 		unit.LastProgressPosition = unit.VehicleRoot.Position
@@ -398,14 +521,7 @@ local function updateVehiclePursuit(
 	if now < unit.ReverseUntil then
 		throttle = -1
 		steering = unit.AvoidanceSign
-	elseif speed > speedLimit then
-		throttle = 0
-		brake = 1
-	end
-
-	local preparingToDismount = (not targetSeated and distance <= PoliceConfig.Vehicle.DismountDistance)
-		or (targetSeated and targetSpeed <= PoliceConfig.Arrest.MaximumSuspectSpeed and distance <= 20)
-	if preparingToDismount and distance <= PoliceConfig.Vehicle.ApproachSlowDistance then
+	elseif distance <= stopDistance or speed > speedLimit then
 		throttle = 0
 		brake = 1
 	end
@@ -415,19 +531,49 @@ local function updateVehiclePursuit(
 		unit.VehicleRoot.CFrame.LookVector * PoliceConfig.Vehicle.ObstacleCheckDistance,
 		unit.RaycastParams
 	)
-	if obstacle and now >= unit.ReverseUntil then
+	if obstacle and now >= unit.ReverseUntil and distance > stopDistance then
 		steering = unit.AvoidanceSign
 		throttle = 0.35
+		brake = 0
 	end
 
 	local controls: VehicleDynamics.ControlState = {
 		Throttle = throttle,
 		Steering = steering,
 		Brake = brake,
-		Handbrake = false,
+		Handbrake = distance <= stopDistance,
 		Parked = false,
 	}
 	VehicleService.StepNpcVehicle(unit.Vehicle, controls, deltaTime)
+	return distance, speed
+end
+
+local function updateVehiclePursuit(
+	unit: PoliceUnit,
+	targetCharacter: Model,
+	targetHumanoid: Humanoid,
+	targetRoot: BasePart,
+	deltaTime: number,
+	now: number
+)
+	unit.RaycastParams.FilterDescendantsInstances = { unit.Vehicle, targetCharacter }
+	local targetSpeed = horizontal(targetRoot.AssemblyLinearVelocity).Magnitude
+	local targetSeated = targetHumanoid.SeatPart ~= nil
+	local distanceToTarget = horizontal(targetRoot.Position - unit.VehicleRoot.Position).Magnitude
+	local preparingToDismount = (not targetSeated and distanceToTarget <= PoliceConfig.Vehicle.DismountDistance)
+		or (targetSeated and targetSpeed <= PoliceConfig.Arrest.MaximumSuspectSpeed and distanceToTarget <= 20)
+	local wantedLevel = WantedService.GetLevel(unit.Target)
+	local speedLimit = PoliceConfig.Vehicle.ResponseSpeeds[wantedLevel]
+		or PoliceConfig.Vehicle.ResponseSpeeds[GameConfig.Wanted.MaximumLevel]
+	local stopDistance = if preparingToDismount then math.min(distanceToTarget, 18) else 0
+	local _, speed = driveVehicleToPosition(
+		unit,
+		targetRoot.Position,
+		speedLimit,
+		stopDistance,
+		deltaTime,
+		now
+	)
 
 	if preparingToDismount and speed <= 9 then
 		dismountOfficer(unit)
@@ -485,32 +631,243 @@ local function updateFootPursuit(
 	end
 end
 
+local function returnOfficerToVehicle(unit: PoliceUnit, deltaTime: number, now: number)
+	VehicleService.StepNpcVehicle(unit.Vehicle, PARKED_CONTROLS, deltaTime)
+	local officerRoot = unit.OfficerRoot
+	if not officerRoot then
+		reboardOfficer(unit)
+		return
+	end
+	unit.State = "ReturningToVehicle"
+	moveOfficer(unit, unit.VehicleRoot.Position, now)
+	if horizontal(unit.VehicleRoot.Position - officerRoot.Position).Magnitude
+		<= PoliceConfig.Officer.ReboardDistance
+	then
+		reboardOfficer(unit)
+	end
+end
+
+local function updateSearchMovement(unit: PoliceUnit, deltaTime: number, now: number)
+	if unit.State == "ReturningToVehicle" then
+		returnOfficerToVehicle(unit, deltaTime, now)
+		return
+	end
+
+	if unit.State == "VehiclePursuit" then
+		unit.RaycastParams.FilterDescendantsInstances = { unit.Vehicle }
+		local distance, speed = driveVehicleToPosition(
+			unit,
+			unit.SearchDestination,
+			PoliceConfig.Search.VehicleSpeed,
+			PoliceConfig.Search.ArrivalDistance,
+			deltaTime,
+			now
+		)
+		if distance <= PoliceConfig.Search.ArrivalDistance and speed <= 9 then
+			dismountOfficer(unit)
+		end
+		return
+	end
+
+	VehicleService.StepNpcVehicle(unit.Vehicle, PARKED_CONTROLS, deltaTime)
+	local officerRoot = unit.OfficerRoot
+	if not officerRoot then
+		reboardOfficer(unit)
+		return
+	end
+
+	local reachedDestination = horizontal(unit.SearchDestination - officerRoot.Position).Magnitude <= 5
+	if unit.Awareness == "Searching" and reachedDestination and now >= unit.NextSearchMoveAt then
+		unit.SearchStep = (unit.SearchStep % #SEARCH_OFFSETS) + 1
+		unit.SearchDestination = unit.LastSeenPosition
+			+ SEARCH_OFFSETS[unit.SearchStep] * PoliceConfig.Search.SweepRadius
+		unit.NextSearchMoveAt = now + PoliceConfig.Search.SweepInterval
+		unit.PathWaypoints = {}
+		unit.WaypointIndex = 1
+	end
+	moveOfficer(unit, unit.SearchDestination, now)
+end
+
+local function updateReturnMovement(unit: PoliceUnit, deltaTime: number, now: number)
+	local returnStartedAt = unit.ReturnStartedAt or now
+	if now - returnStartedAt >= PoliceConfig.Return.Timeout then
+		cleanupUnit(unit.Target)
+		return
+	end
+
+	if unit.Officer then
+		returnOfficerToVehicle(unit, deltaTime, now)
+		return
+	end
+
+	unit.RaycastParams.FilterDescendantsInstances = { unit.Vehicle }
+	local distance, speed = driveVehicleToPosition(
+		unit,
+		unit.SpawnMarker.Position,
+		PoliceConfig.Return.VehicleSpeed,
+		PoliceConfig.Return.ArrivalDistance,
+		deltaTime,
+		now
+	)
+	if distance <= PoliceConfig.Return.ArrivalDistance and speed <= 7 then
+		cleanupUnit(unit.Target)
+	end
+end
+
+local function updateSight(unit: PoliceUnit, targetCharacter: Model, targetHumanoid: Humanoid, targetRoot: BasePart, now: number)
+	if now - unit.LastSightCheck < PoliceConfig.Search.SightCheckInterval then
+		return
+	end
+	unit.LastSightCheck = now
+	local visible = canSeeTarget(unit, targetCharacter, targetHumanoid, targetRoot)
+	unit.TargetVisible = visible
+	if visible then
+		unit.HasEstablishedContact = true
+		local wasSearching = unit.Awareness == "Searching"
+		unit.LastSeenPosition = targetRoot.Position
+		unit.LastSeenAt = now
+		unit.SearchDestination = targetRoot.Position
+		if wasSearching then
+			resumePursuit(unit, targetRoot.Position, now, true)
+			PlayerStateService.SetRobberyStatus(unit.Target, "Police spotted you — escape reset!")
+		end
+	elseif unit.Awareness == "Pursuit" then
+		if not unit.HasEstablishedContact then
+			-- Dispatch supplies approximate live updates until the responding unit
+			-- reaches the scene. This prevents a distant station spawn from starting
+			-- the escape timer before police have had a fair chance to arrive.
+			unit.LastSeenPosition = targetRoot.Position
+			unit.SearchDestination = targetRoot.Position
+			unit.LastSeenAt = now
+			if now - unit.DispatchStartedAt >= PoliceConfig.Dispatch.MaximumTrackingTime then
+				beginSearch(unit, now)
+			end
+		elseif now - unit.LastSeenAt >= PoliceConfig.Search.LostSightGrace then
+			beginSearch(unit, now)
+		end
+	end
+end
+
+local function updateEscapeCountdown(unit: PoliceUnit, now: number)
+	if unit.Awareness ~= "Searching" then
+		return
+	end
+	local hiddenSince = unit.HiddenSince
+	if not hiddenSince then
+		unit.HiddenSince = now
+		hiddenSince = now
+	end
+
+	local wantedLevel = WantedService.GetLevel(unit.Target)
+	if wantedLevel <= 0 then
+		beginReturn(unit, now)
+		return
+	end
+	local duration = PoliceConfig.Search.EscapeSecondsPerLevel[wantedLevel]
+		or PoliceConfig.Search.EscapeSecondsPerLevel[GameConfig.Wanted.MaximumLevel]
+	local remaining = math.max(0, math.ceil(duration - (now - hiddenSince)))
+	if remaining ~= unit.LastHudSecond then
+		unit.LastHudSecond = remaining
+		PlayerStateService.SetPoliceState(unit.Target, "Searching", remaining)
+	end
+	if remaining > 0 then
+		return
+	end
+
+	local newLevel = WantedService.ReduceWanted(unit.Target, 1)
+	if not newLevel then
+		return
+	end
+	if newLevel <= 0 then
+		EconomyService.SecureRobberyProceeds(unit.Target)
+		local escapeMessage = "You escaped! Wanted cleared — keep the money."
+		PlayerStateService.SetRobberyStatus(unit.Target, escapeMessage)
+		beginReturn(unit, now)
+		task.delay(4, function()
+			if unit.Target.Parent == Players
+				and unit.Target:GetAttribute(GameConfig.Attributes.RobberyStatus) == escapeMessage
+			then
+				PlayerStateService.SetRobberyStatus(unit.Target, GameConfig.PlayerDefaults.RobberyStatus)
+			end
+		end)
+	else
+		unit.HiddenSince = now
+		unit.LastHudSecond = -1
+		PlayerStateService.SetRobberyStatus(unit.Target, `Escaped one star — {newLevel} remaining.`)
+	end
+end
+
 local function updateUnit(unit: PoliceUnit, deltaTime: number, now: number)
 	if not unit.Vehicle.Parent then
 		cleanupUnit(unit.Target)
 		return
 	end
 	setSirenLights(unit, now)
+	if unit.Awareness == "Returning" then
+		if WantedService.GetLevel(unit.Target) > 0 then
+			local _, _, targetRoot = getLivingTarget(unit.Target)
+			local targetPosition = if targetRoot then targetRoot.Position else unit.LastSeenPosition
+			resumePursuit(unit, targetPosition, now, false)
+		else
+			updateReturnMovement(unit, deltaTime, now)
+			return
+		end
+	end
 
 	local targetCharacter, targetHumanoid, targetRoot = getLivingTarget(unit.Target)
 	if not targetCharacter or not targetHumanoid or not targetRoot then
-		VehicleService.StepNpcVehicle(unit.Vehicle, PARKED_CONTROLS, deltaTime)
+		unit.TargetVisible = false
+		if unit.Awareness == "Pursuit" then
+			local contactExpired = unit.HasEstablishedContact
+				and now - unit.LastSeenAt >= PoliceConfig.Search.LostSightGrace
+			local dispatchExpired = not unit.HasEstablishedContact
+				and now - unit.DispatchStartedAt >= PoliceConfig.Dispatch.MaximumTrackingTime
+			if contactExpired or dispatchExpired then
+				beginSearch(unit, now)
+			end
+		end
+		updateEscapeCountdown(unit, now)
+		if unit.Awareness == "Returning" then
+			updateReturnMovement(unit, deltaTime, now)
+		else
+			updateSearchMovement(unit, deltaTime, now)
+		end
+		return
+	end
+	updateSight(unit, targetCharacter, targetHumanoid, targetRoot, now)
+	updateEscapeCountdown(unit, now)
+	if unit.Awareness == "Returning" then
+		updateReturnMovement(unit, deltaTime, now)
 		return
 	end
 
-	if unit.State == "VehiclePursuit" then
+	if unit.Awareness == "Pursuit" and unit.TargetVisible and unit.State == "VehiclePursuit" then
 		updateVehiclePursuit(unit, targetCharacter, targetHumanoid, targetRoot, deltaTime, now)
-	else
+	elseif unit.Awareness == "Pursuit" and unit.TargetVisible then
 		updateFootPursuit(unit, targetHumanoid, targetRoot, deltaTime, now)
+	else
+		updateSearchMovement(unit, deltaTime, now)
 	end
 end
 
 local function watchPlayer(player: Player)
 	player:GetAttributeChangedSignal(GameConfig.Attributes.WantedLevel):Connect(function()
 		if WantedService.GetLevel(player) > 0 then
+			local unit = unitsByPlayer[player]
+			if unit and unit.Awareness == "Returning" then
+				local _, _, targetRoot = getLivingTarget(player)
+				resumePursuit(unit, if targetRoot then targetRoot.Position else unit.LastSeenPosition, os.clock(), false)
+			end
 			ensureUnit(player)
 		else
-			cleanupUnit(player)
+			local unit = unitsByPlayer[player]
+			if unit then
+				if ArrestService.IsArrested(player) then
+					cleanupUnit(player)
+				else
+					beginReturn(unit, os.clock())
+				end
+			end
 		end
 	end)
 	player.CharacterAdded:Connect(function()
@@ -552,7 +909,6 @@ function PoliceService.Start()
 		local now = os.clock()
 		for player, unit in unitsByPlayer do
 			if player.Parent ~= Players
-				or WantedService.GetLevel(player) <= 0
 				or ArrestService.IsArrested(player)
 			then
 				cleanupUnit(player)
