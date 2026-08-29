@@ -4,15 +4,17 @@
 -- Gameplay code should read this table instead of scattering magic numbers.
 local GameConfig = {
 	GameName = "Ricky's City",
-	WorldVersion = 6,
+	WorldVersion = 12,
 
 	PlayerDefaults = {
-		Money = 0,
+		Money = 150,
 		WantedLevel = 0,
 		RobberyStatus = "Explore the city",
 		Arrested = false,
 		PoliceState = "Clear",
 		EscapeTimeRemaining = 0,
+		HasChosenSpawn = false,
+		SelectedSpawn = "Arrival",
 	},
 
 	Wanted = {
@@ -27,11 +29,13 @@ local GameConfig = {
 		Arrested = "Arrested",
 		PoliceState = "PoliceState",
 		EscapeTimeRemaining = "EscapeTimeRemaining",
+		HasChosenSpawn = "HasChosenSpawn",
+		SelectedSpawn = "SelectedSpawn",
 	},
 
 	World = {
 		ContainerName = "GameWorld",
-		MapSize = 512,
+		MapSize = 1600,
 		RoadWidth = 44,
 		DrivingSurfaceY = 1,
 	},

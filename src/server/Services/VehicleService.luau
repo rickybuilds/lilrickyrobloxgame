@@ -383,6 +383,14 @@ local function trySeatPlayer(player: Player, record: VehicleRecord, seat: Vehicl
 	if seat.Occupant or not playerIsNear(player, record.Root) then
 		return
 	end
+	local rentalOwnerUserId = record.Model:GetAttribute("RentalOwnerUserId")
+	if seat == record.DriverSeat
+		and typeof(rentalOwnerUserId) == "number"
+		and rentalOwnerUserId > 0
+		and rentalOwnerUserId ~= player.UserId
+	then
+		return
+	end
 	if seatAssignments[player] then
 		return
 	end
@@ -583,6 +591,35 @@ function VehicleService.ForceExit(player: Player): boolean
 	return exitVehicle(player, true)
 end
 
+function VehicleService.CreateRentalVehicle(spawnCFrame: CFrame, parent: Instance, owner: Player): Model
+	assert(started, "VehicleService must be started before creating rental vehicles")
+	assert(owner.Parent == Players, "Rental owner must be an active player")
+	local record = createStarterCar(spawnCFrame, parent)
+	record.Model.Name = `RentalGleepGlorp_{owner.UserId}`
+	record.Model:SetAttribute("IsRentalVehicle", true)
+	record.Model:SetAttribute("RentalOwnerUserId", owner.UserId)
+	registerVehicle(record)
+	return record.Model
+end
+
+function VehicleService.DestroyPlayerVehicle(vehicle: Model)
+	local record = records[vehicle]
+	if not record or npcVehicles[vehicle] then
+		return
+	end
+	for player, assignment in seatAssignments do
+		if assignment.Record == record then
+			local humanoid = assignment.Seat.Occupant
+			if humanoid then
+				humanoid.Sit = false
+			end
+			seatAssignments[player] = nil
+		end
+	end
+	records[vehicle] = nil
+	vehicle:Destroy()
+end
+
 local function markPoliceVisual(part: BasePart)
 	part:SetAttribute("PoliceDriverVisual", true)
 end
@@ -715,20 +752,9 @@ function VehicleService.Start()
 	setVehicleParkedRemote.OnServerEvent:Connect(setVehicleParked)
 
 	local world = Workspace:WaitForChild("GameWorld")
-	local spawns = world:WaitForChild("Spawns")
-	local spawnMarker = spawns:WaitForChild("VehicleSpawn")
-	assert(spawnMarker:IsA("BasePart"), "Workspace.GameWorld.Spawns.VehicleSpawn must be a BasePart")
-	spawnMarker.CanQuery = false
-
 	local vehiclesFolder = Instance.new("Folder")
 	vehiclesFolder.Name = "Vehicles"
 	vehiclesFolder.Parent = world
-
-	local spawnCFrame = spawnMarker.CFrame
-		* CFrame.new(0, 3.2, 0)
-		* CFrame.Angles(0, math.rad(90), 0)
-	local starterCar = createStarterCar(spawnCFrame, vehiclesFolder)
-	registerVehicle(starterCar)
 
 	Players.PlayerRemoving:Connect(function(player)
 		local assignment = seatAssignments[player]

@@ -9,6 +9,9 @@ local PlayerStateService = require(script.Parent.PlayerStateService)
 
 local WantedService = {}
 local started = false
+local crimeReportedEvent = Instance.new("BindableEvent")
+
+export type CrimeReportedCallback = (player: Player, crimeId: string, wantedLevel: number) -> ()
 
 function WantedService.Start()
 	assert(not started, "WantedService.Start may only be called once")
@@ -44,7 +47,14 @@ function WantedService.ReportCrime(player: Player, crimeId: string): number?
 		then settings.MinimumLevel
 		else currentLevel + settings.RepeatIncrease
 
-	return PlayerStateService.SetWantedLevel(player, newLevel)
+	local reportedLevel = PlayerStateService.SetWantedLevel(player, newLevel)
+	crimeReportedEvent:Fire(player, crimeId, reportedLevel)
+	return reportedLevel
+end
+
+function WantedService.ConnectCrimeReported(callback: CrimeReportedCallback): RBXScriptConnection
+	assert(started, "WantedService must be started before crime listeners connect")
+	return crimeReportedEvent.Event:Connect(callback)
 end
 
 function WantedService.ClearWanted(player: Player): number?

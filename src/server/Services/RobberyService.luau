@@ -21,6 +21,7 @@ type StoreRuntime = {
 	Reward: number,
 	Duration: number,
 	Cooldown: number,
+	CrimeId: string,
 	MaximumDistance: number,
 	Register: BasePart,
 	Prompt: ProximityPrompt,
@@ -120,7 +121,7 @@ local function completeRobbery(store: StoreRuntime)
 		activeStoreByPlayer[player] = nil
 		local balance = EconomyService.AwardMoney(player, store.Reward, `robbery:{store.Id}`)
 		if balance ~= nil then
-			WantedService.ReportCrime(player, "StoreRobbery")
+			WantedService.ReportCrime(player, store.CrimeId)
 			setTemporaryPlayerStatus(player, `Robbery complete! +${store.Reward}`)
 		end
 	end
@@ -196,7 +197,7 @@ local function registerStore(register: BasePart, storeId: string)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "RobberyPrompt"
-	prompt.ActionText = "Rob Register"
+	prompt.ActionText = settings.ActionText
 	prompt.ObjectText = settings.DisplayName
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
@@ -211,6 +212,7 @@ local function registerStore(register: BasePart, storeId: string)
 		Reward = settings.Reward,
 		Duration = settings.Duration,
 		Cooldown = settings.Cooldown,
+		CrimeId = settings.CrimeId,
 		MaximumDistance = settings.MaximumDistance,
 		Register = register,
 		Prompt = prompt,

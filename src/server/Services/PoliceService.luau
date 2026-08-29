@@ -850,14 +850,31 @@ local function updateUnit(unit: PoliceUnit, deltaTime: number, now: number)
 	end
 end
 
+local function handleCrimeReported(player: Player, _crimeId: string, _wantedLevel: number)
+	local unit = unitsByPlayer[player]
+	if not unit then
+		ensureUnit(player)
+		return
+	end
+
+	local _, _, targetRoot = getLivingTarget(player)
+	local targetPosition = if targetRoot then targetRoot.Position else unit.LastSeenPosition
+	if unit.Awareness == "Returning" then
+		-- A completed escape ends the old response. A later crime receives a new
+		-- station dispatch instead of reviving a distant or stuck returning unit.
+		cleanupUnit(player)
+		ensureUnit(player)
+	elseif unit.Awareness == "Searching" or not unit.TargetVisible then
+		-- A new crime is a fresh dispatch location. The current unit can respond,
+		-- but it must stop searching the obsolete last-seen position.
+		resumePursuit(unit, targetPosition, os.clock(), false)
+		PlayerStateService.SetRobberyStatus(player, "New crime reported — police redirected!")
+	end
+end
+
 local function watchPlayer(player: Player)
 	player:GetAttributeChangedSignal(GameConfig.Attributes.WantedLevel):Connect(function()
 		if WantedService.GetLevel(player) > 0 then
-			local unit = unitsByPlayer[player]
-			if unit and unit.Awareness == "Returning" then
-				local _, _, targetRoot = getLivingTarget(player)
-				resumePursuit(unit, if targetRoot then targetRoot.Position else unit.LastSeenPosition, os.clock(), false)
-			end
 			ensureUnit(player)
 		else
 			local unit = unitsByPlayer[player]
@@ -892,6 +909,7 @@ function PoliceService.Start()
 		end
 	end
 	assert(#responseMarkers > 0, "PoliceService requires at least one PoliceResponse marker")
+	WantedService.ConnectCrimeReported(handleCrimeReported)
 
 	Players.PlayerAdded:Connect(watchPlayer)
 	for _, player in Players:GetPlayers() do

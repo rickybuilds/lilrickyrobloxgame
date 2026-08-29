@@ -17,12 +17,14 @@ local function initializePlayer(player: Player)
 	player:SetAttribute(GameConfig.Attributes.Arrested, GameConfig.PlayerDefaults.Arrested)
 	player:SetAttribute(GameConfig.Attributes.PoliceState, GameConfig.PlayerDefaults.PoliceState)
 	player:SetAttribute(GameConfig.Attributes.EscapeTimeRemaining, GameConfig.PlayerDefaults.EscapeTimeRemaining)
+	player:SetAttribute(GameConfig.Attributes.HasChosenSpawn, GameConfig.PlayerDefaults.HasChosenSpawn)
+	player:SetAttribute(GameConfig.Attributes.SelectedSpawn, GameConfig.PlayerDefaults.SelectedSpawn)
 
 	-- Point every player at our named spawn. This prevents a leftover SpawnLocation
 	-- from the Studio Baseplate template from being selected at random.
 	local gameWorld = workspace:FindFirstChild(GameConfig.World.ContainerName)
 	local spawns = if gameWorld then gameWorld:FindFirstChild("Spawns") else nil
-	local playerSpawn = if spawns then spawns:FindFirstChild("PlayerSpawn") else nil
+	local playerSpawn = if spawns then spawns:FindFirstChild("ArrivalSpawn") else nil
 	if playerSpawn and playerSpawn:IsA("SpawnLocation") then
 		player.RespawnLocation = playerSpawn
 	end

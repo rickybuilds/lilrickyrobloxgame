@@ -8,8 +8,18 @@ export type CrimeSettings = {
 -- Crime tuning is data-driven so later activities can report crimes without
 -- embedding wanted-level rules in robbery, combat, or vehicle code.
 local crimes: { [string]: CrimeSettings } = {
+	MinorRobbery = {
+		MinimumLevel = 1,
+		RepeatIncrease = 1,
+	},
+
 	StoreRobbery = {
 		MinimumLevel = 2,
+		RepeatIncrease = 1,
+	},
+
+	MajorRobbery = {
+		MinimumLevel = 3,
 		RepeatIncrease = 1,
 	},
 

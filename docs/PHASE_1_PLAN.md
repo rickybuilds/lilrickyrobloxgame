@@ -134,7 +134,7 @@ Test checklist:
 
 Add police sight/search state, escape timer, wanted decay, cleanup/return behavior, and final Phase 1 tuning.
 
-Status: **Implemented; awaiting Roblox Studio runtime validation.**
+Status: **Stable. Phase 1 MVP complete.**
 
 Test checklist:
 
@@ -143,6 +143,30 @@ Test checklist:
 - Remaining unseen eventually clears wanted level and dismisses police.
 - The successful robbery reward remains after escape.
 - The full drive–rob–chase–escape loop works repeatedly in a two-player test.
+
+### Milestone 6A — Living city expansion
+
+Expand the generated map with a larger connected road grid, outer loop, alleys, named buildings, parking areas, street details, hiding locations, and future NPC road nodes. This is a post-MVP map pass and does not change the stable Milestone 5 gameplay rules.
+
+Status: **Implemented; awaiting Roblox Studio runtime validation.**
+
+### Milestone 6A+ — Mega city density
+
+Quadruple the expansion from 16 to 64 blocks, add 96 more generated buildings, extend the road grid and future navigation graph to 81 intersections, and add large perimeter and boulevard tree belts.
+
+Status: **Implemented; awaiting Roblox Studio runtime and performance validation.**
+
+### Milestone 6B — Robbery city
+
+Add forty themed, server-authoritative robbery locations throughout the Mega City. Locations use five visual styles and three risk tiers with varied rewards, timers, cooldowns, actions, and wanted severity. The original Quick Stop remains unchanged as the central introductory robbery.
+
+Status: **Implemented; awaiting Roblox Studio runtime and multiplayer validation.**
+
+### Milestone 6C — Arrival, rentals, and city economy
+
+Add an enclosed first-join arrival terminal with five physical district gates. A player's selection becomes their session respawn point. Every destination has a server-authoritative $100 Gleep Glorp rental kiosk, players begin with $150, and the forty new robbery payouts range from $50 to $1,000. Five satellite precincts bring the police network to six stations and twelve response lanes.
+
+Status: **Implemented; awaiting Roblox Studio runtime, economy, and multiplayer validation.**
 
 ## Security rules for every milestone
 

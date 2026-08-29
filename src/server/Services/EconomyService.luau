@@ -36,6 +36,21 @@ function EconomyService.AwardMoney(player: Player, amount: number, reason: strin
 	return balance
 end
 
+-- Returns the new balance, or nil when the player cannot afford the purchase.
+-- The server performs the balance check and deduction as one transaction.
+function EconomyService.TrySpendMoney(player: Player, amount: number, reason: string): number?
+	assert(amount > 0 and amount % 1 == 0, "Purchases must cost positive whole dollars")
+	assert(amount <= 10_000, "A single MVP purchase is unexpectedly large")
+	assert(#reason > 0 and #reason <= 50, "Purchases require a short reason")
+	if player.Parent ~= Players or PlayerStateService.GetMoney(player) < amount then
+		return nil
+	end
+
+	local balance = PlayerStateService.RemoveMoney(player, amount)
+	print(`Economy: charged {player.Name} ${amount} ({reason}); balance ${balance}`)
+	return balance
+end
+
 function EconomyService.GetRobberyProceeds(player: Player): number
 	return math.min(robberyProceeds[player] or 0, PlayerStateService.GetMoney(player))
 end
