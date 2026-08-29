@@ -16,6 +16,7 @@ type PartOptions = {
 	Material: Enum.Material?,
 	Parent: Instance,
 	CanCollide: boolean?,
+	CanQuery: boolean?,
 	Transparency: number?,
 }
 
@@ -28,6 +29,7 @@ local function makePart(options: PartOptions): Part
 	part.Color = options.Color or Color3.fromRGB(163, 162, 165)
 	part.Material = options.Material or Enum.Material.SmoothPlastic
 	part.CanCollide = if options.CanCollide == nil then true else options.CanCollide
+	part.CanQuery = if options.CanQuery == nil then true else options.CanQuery
 	part.Transparency = options.Transparency or 0
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
@@ -101,21 +103,27 @@ local function createRoads(parent: Instance)
 	local roadColor = Color3.fromRGB(48, 50, 53)
 	local roadWidth = GameConfig.World.RoadWidth
 	local mapSize = GameConfig.World.MapSize
+	local surfaceY = GameConfig.World.DrivingSurfaceY
+	local roadThickness = 0.05
 
 	makePart({
 		Name = "EastWestRoad",
-		Size = Vector3.new(mapSize, 0.4, roadWidth),
-		Position = Vector3.new(0, 0.2, 0),
+		Size = Vector3.new(mapSize, roadThickness, roadWidth),
+		Position = Vector3.new(0, surfaceY + roadThickness / 2, 0),
 		Color = roadColor,
 		Material = Enum.Material.Asphalt,
+		CanCollide = false,
+		CanQuery = false,
 		Parent = roads,
 	})
 	makePart({
 		Name = "NorthSouthRoad",
-		Size = Vector3.new(roadWidth, 0.42, mapSize),
-		Position = Vector3.new(0, 0.22, 0),
+		Size = Vector3.new(roadWidth, roadThickness, mapSize),
+		Position = Vector3.new(0, surfaceY + roadThickness / 2 + 0.002, 0),
 		Color = roadColor,
 		Material = Enum.Material.Asphalt,
+		CanCollide = false,
+		CanQuery = false,
 		Parent = roads,
 	})
 
@@ -128,19 +136,21 @@ local function createRoads(parent: Instance)
 			makePart({
 				Name = "RoadStripe",
 				Size = Vector3.new(10, 0.05, 0.6),
-				Position = Vector3.new(offset, 0.46, 0),
+				Position = Vector3.new(offset, surfaceY + 0.03, 0),
 				Color = Color3.fromRGB(255, 214, 74),
 				Material = Enum.Material.Neon,
 				CanCollide = false,
+				CanQuery = false,
 				Parent = markings,
 			})
 			makePart({
 				Name = "RoadStripe",
 				Size = Vector3.new(0.6, 0.05, 10),
-				Position = Vector3.new(0, 0.47, offset),
+				Position = Vector3.new(0, surfaceY + 0.03, offset),
 				Color = Color3.fromRGB(255, 214, 74),
 				Material = Enum.Material.Neon,
 				CanCollide = false,
+				CanQuery = false,
 				Parent = markings,
 			})
 		end
@@ -152,28 +162,31 @@ local function createCityBlocks(parent: Instance)
 	cityBlocks.Name = "CityBlocks"
 	cityBlocks.Parent = parent
 
+	local surfaceY = GameConfig.World.DrivingSurfaceY
 	local blockCenters = {
-		Vector3.new(-139, 0.5, -139),
-		Vector3.new(139, 0.5, -139),
-		Vector3.new(-139, 0.5, 139),
-		Vector3.new(139, 0.5, 139),
+		Vector3.new(-139, surfaceY - 0.5, -139),
+		Vector3.new(139, surfaceY - 0.5, -139),
+		Vector3.new(-139, surfaceY - 0.5, 139),
+		Vector3.new(139, surfaceY - 0.5, 139),
 	}
 
 	for index, center in blockCenters do
 		makePart({
 			Name = `SidewalkBlock{index}`,
-			Size = Vector3.new(222, 1, 222),
-			Position = center,
+			Size = Vector3.new(222, 0.05, 222),
+			Position = Vector3.new(center.X, surfaceY + 0.025, center.Z),
 			Color = Color3.fromRGB(168, 168, 168),
 			Material = Enum.Material.Concrete,
+			CanCollide = false,
+			CanQuery = false,
 			Parent = cityBlocks,
 		})
 	end
 
 	-- Simple background buildings make the blockout feel like a city while keeping
 	-- important landmarks easy to identify.
-	makeBuildingShell(cityBlocks, "BlueApartments", Vector3.new(-155, 1, -150), Vector3.new(70, 44, 55), Color3.fromRGB(86, 126, 160), "APARTMENTS")
-	makeBuildingShell(cityBlocks, "CommunityCenter", Vector3.new(150, 1, 148), Vector3.new(78, 28, 60), Color3.fromRGB(207, 155, 83), "COMMUNITY")
+	makeBuildingShell(cityBlocks, "BlueApartments", Vector3.new(-155, surfaceY, -150), Vector3.new(70, 44, 55), Color3.fromRGB(86, 126, 160), "APARTMENTS")
+	makeBuildingShell(cityBlocks, "CommunityCenter", Vector3.new(150, surfaceY, 148), Vector3.new(78, 28, 60), Color3.fromRGB(207, 155, 83), "COMMUNITY")
 end
 
 local function createConvenienceStore(parent: Instance)
@@ -181,13 +194,13 @@ local function createConvenienceStore(parent: Instance)
 	store.Name = "ConvenienceStore"
 	store.Parent = parent
 
-	local origin = Vector3.new(130, 1, -132)
+	local origin = Vector3.new(130, GameConfig.World.DrivingSurfaceY, -132)
 	local width = 70
 	local depth = 54
 	local height = 20
 	local wallColor = Color3.fromRGB(246, 235, 187)
 
-	makePart({ Name = "Floor", Size = Vector3.new(width, 1, depth), Position = origin, Color = Color3.fromRGB(216, 207, 179), Material = Enum.Material.SmoothPlastic, Parent = store })
+	makePart({ Name = "Floor", Size = Vector3.new(width, 0.05, depth), Position = origin + Vector3.new(0, 0.06, 0), Color = Color3.fromRGB(216, 207, 179), Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Parent = store })
 	makePart({ Name = "BackWall", Size = Vector3.new(width, height, 2), Position = origin + Vector3.new(0, height / 2, depth / 2), Color = wallColor, Material = Enum.Material.Brick, Parent = store })
 	makePart({ Name = "LeftWall", Size = Vector3.new(2, height, depth), Position = origin + Vector3.new(-width / 2, height / 2, 0), Color = wallColor, Material = Enum.Material.Brick, Parent = store })
 	makePart({ Name = "RightWall", Size = Vector3.new(2, height, depth), Position = origin + Vector3.new(width / 2, height / 2, 0), Color = wallColor, Material = Enum.Material.Brick, Parent = store })
@@ -208,7 +221,7 @@ local function createConvenienceStore(parent: Instance)
 	local counter = makePart({
 		Name = "Counter",
 		Size = Vector3.new(28, 5, 5),
-		Position = origin + Vector3.new(14, 3, 17),
+		Position = origin + Vector3.new(14, 2.5, 17),
 		Color = Color3.fromRGB(121, 76, 48),
 		Material = Enum.Material.Wood,
 		Parent = store,
@@ -221,7 +234,8 @@ local function createConvenienceStore(parent: Instance)
 		Material = Enum.Material.Metal,
 		Parent = store,
 	})
-	register:SetAttribute("RobberyEnabled", false)
+	register:SetAttribute("RobberyEnabled", true)
+	register:SetAttribute("RobberyStoreId", "QuickStop")
 
 	local comingSoon = makePart({
 		Name = "MilestoneSign",
@@ -231,7 +245,7 @@ local function createConvenienceStore(parent: Instance)
 		CanCollide = false,
 		Parent = store,
 	})
-	addSurfaceLabel(comingSoon, "REGISTER: MILESTONE 3", Enum.NormalId.Front)
+	addSurfaceLabel(comingSoon, "ROB THE REGISTER", Enum.NormalId.Front)
 	store.PrimaryPart = counter
 end
 
@@ -239,7 +253,7 @@ local function createPoliceStation(parent: Instance)
 	local station = makeBuildingShell(
 		parent,
 		"PoliceStation",
-		Vector3.new(-140, 1, 135),
+		Vector3.new(-140, GameConfig.World.DrivingSurfaceY, 135),
 		Vector3.new(78, 30, 60),
 		Color3.fromRGB(155, 176, 200),
 		"POLICE STATION"
@@ -256,7 +270,7 @@ local function createSpawns(parent: Instance)
 	playerSpawn.Name = "PlayerSpawn"
 	playerSpawn.Anchored = true
 	playerSpawn.Size = Vector3.new(12, 1, 12)
-	playerSpawn.Position = Vector3.new(32, 1.5, 32)
+	playerSpawn.Position = Vector3.new(32, GameConfig.World.DrivingSurfaceY + 0.5, 32)
 	playerSpawn.Color = Color3.fromRGB(73, 200, 92)
 	playerSpawn.Material = Enum.Material.Neon
 	playerSpawn.Neutral = true
@@ -265,7 +279,7 @@ local function createSpawns(parent: Instance)
 	local vehicleSpawn = makePart({
 		Name = "VehicleSpawn",
 		Size = Vector3.new(12, 0.3, 22),
-		Position = Vector3.new(52, 0.65, 10),
+		Position = Vector3.new(52, GameConfig.World.DrivingSurfaceY + 0.15, 10),
 		Color = Color3.fromRGB(69, 156, 255),
 		Material = Enum.Material.Neon,
 		CanCollide = false,
@@ -278,8 +292,8 @@ local function createSpawns(parent: Instance)
 	policeSpawns.Parent = spawns
 
 	for index, position in {
-		Vector3.new(-118, 1, 102),
-		Vector3.new(-145, 1, 102),
+		Vector3.new(-118, GameConfig.World.DrivingSurfaceY, 102),
+		Vector3.new(-145, GameConfig.World.DrivingSurfaceY, 102),
 	} do
 		local marker = makePart({
 			Name = `StationResponse{index}`,
@@ -309,7 +323,9 @@ function WorldService.Start()
 	makePart({
 		Name = "Ground",
 		Size = Vector3.new(GameConfig.World.MapSize, 2, GameConfig.World.MapSize),
-		Position = Vector3.new(0, -1, 0),
+		-- One continuous collision plane keeps the arcade chassis stable. Roads,
+		-- sidewalks, and floors are non-queryable visual skins just above it.
+		Position = Vector3.new(0, GameConfig.World.DrivingSurfaceY - 1, 0),
 		Color = Color3.fromRGB(83, 137, 71),
 		Material = Enum.Material.Grass,
 		Parent = world,

@@ -358,6 +358,9 @@ local function updateDriver(record: VehicleRecord)
 		record.Model:SetAttribute(VehicleConfig.Attributes.Parked, true)
 		record.DriverPrompt.Enabled = true
 		VehicleDynamics.ResetForces(record.Model)
+		-- Remove client-owned steering momentum before returning the empty car to
+		-- server ownership. Linear momentum is still handled by parking drag.
+		record.Root.AssemblyAngularVelocity = Vector3.zero
 		setNetworkOwner(record, nil)
 	end
 end

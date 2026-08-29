@@ -32,7 +32,10 @@ ReplicatedStorage
 ServerScriptService
 ├── Main                               (Script)
 └── Services
+    ├── EconomyService                 (ModuleScript)
     ├── PlayerStateService             (ModuleScript)
+    ├── RobberyService                 (ModuleScript)
+    ├── VehicleService                 (ModuleScript)
     └── WorldService                   (ModuleScript)
 
 StarterPlayer
@@ -89,7 +92,7 @@ Test checklist:
 - Confirm money `$0`, wanted `0`, and `Explore the city` appear.
 - Confirm a two-player Studio test works without errors.
 
-### Milestone 2 — One drivable car (implemented; awaiting Studio acceptance test)
+### Milestone 2 — One drivable car (stable)
 
 Add one arcade car, server-controlled seat assignment, enter/exit interaction, acceleration, braking, steering, reverse, handbrake, health, and reset-if-stuck behavior.
 
@@ -101,7 +104,7 @@ Test checklist:
 - Two players cannot claim the driver seat simultaneously.
 - Vehicle behavior is acceptable in a two-player server.
 
-### Milestone 3 — Store robbery and economy
+### Milestone 3 — Store robbery and economy (implemented; awaiting Studio acceptance test)
 
 Add a server-validated register prompt, robbery countdown, cancellation on leaving the area, payout, store cooldown, and HUD status.
 

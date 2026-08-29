@@ -2,18 +2,18 @@
 
 An age-appropriate Roblox open-world driving and cops-vs-criminals game being built one playable milestone at a time.
 
-## Current build: Milestone 2 — Drivable Car Test Build
+## Current build: Milestone 3 — Quick Stop Robbery Test Build
 
-Milestone 1 is the stable baseline. The current test build adds:
+Milestones 1 and 2 are the stable baseline. The current test build adds:
 
-- One original arcade-style car generated from safe Parts
-- Server-validated driver and passenger entry prompts
-- Acceleration, braking/reverse, steering, suspension, grip, and handbrake
-- Server-controlled seat assignment, health, exits, and network ownership
-- A driver-only speedometer and vehicle health display
-- Keyboard, gamepad, and touch-ready action bindings
+- One server-validated robbery at the Quick Stop register
+- An eight-second stay-near-the-register countdown
+- Cancellation with no payout when the robber leaves early
+- A single server-issued `$250` reward on success
+- A shared 20-second store cooldown
+- Robbery progress in the existing HUD and over the register
 
-It intentionally does **not** include robbery payout or police AI yet. Those remain later milestones.
+It intentionally does **not** raise wanted level or spawn police yet. Wanted escalation and police pursuit are Milestone 4, after this robbery/economy layer passes testing.
 
 ## Open it in Roblox Studio
 
@@ -27,19 +27,15 @@ This project uses [Rojo](https://rojo.space/) so the readable Luau source files 
 
 The city is created when the server starts. It appears under `Workspace > GameWorld` while playing.
 
-## Milestone 2 test checklist
+## Milestone 3 test checklist
 
-- [ ] The red car appears over the blue vehicle pad without falling through the road.
-- [ ] The nearby **Drive** prompt seats one player in the driver seat.
-- [ ] `W/S` accelerates, brakes, and reverses; `A/D` steers.
-- [ ] Holding `Space` engages the handbrake and updates the vehicle HUD.
-- [ ] `P` parks the car; pressing the throttle automatically releases park.
-- [ ] The speedometer appears only for the driver and changes while moving.
-- [ ] Pressing `E` exits beside the vehicle instead of underneath it.
-- [ ] A second player can use **Ride** but cannot control the car.
-- [ ] Two players cannot occupy the driver seat simultaneously.
-- [ ] Resetting or leaving returns vehicle network control safely.
-- [ ] The Milestone 1 HUD and respawn behavior still work.
+- [ ] The Quick Stop register shows **READY** and a **Rob Register** prompt.
+- [ ] Starting a robbery changes the HUD to an eight-second countdown.
+- [ ] Walking away early cancels the robbery and leaves money at `$0`.
+- [ ] Staying near the register completes it and awards exactly `$250` once.
+- [ ] The register enters a visible 20-second cooldown, then returns to **READY**.
+- [ ] In a two-client test, only one player can own the active robbery.
+- [ ] The stable city, car, seats, controls, vehicle HUD, and respawn still work.
 - [ ] The Output window has no red errors.
 
-See [docs/MILESTONE_2_TEST.md](docs/MILESTONE_2_TEST.md) for the complete controls and test procedure.
+See [docs/MILESTONE_3_TEST.md](docs/MILESTONE_3_TEST.md) for the complete test procedure.

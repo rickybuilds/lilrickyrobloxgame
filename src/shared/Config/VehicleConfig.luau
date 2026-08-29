@@ -58,6 +58,7 @@ local VehicleConfig = {
 		HandbrakeDrag = 7,
 		ParkGrip = 14,
 		ParkDrag = 12,
+		ParkAngularDamping = 40,
 		MaximumLateralAcceleration = 65,
 		MaximumYawRate = math.rad(70),
 		MinimumSteeringSpeed = 3,

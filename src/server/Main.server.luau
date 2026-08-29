@@ -3,6 +3,7 @@
 local Services = script.Parent.Services
 
 local PlayerStateService = require(Services.PlayerStateService)
+local RobberyService = require(Services.RobberyService)
 local VehicleService = require(Services.VehicleService)
 local WorldService = require(Services.WorldService)
 
@@ -11,5 +12,6 @@ local WorldService = require(Services.WorldService)
 WorldService.Start()
 PlayerStateService.Start()
 VehicleService.Start()
+RobberyService.Start()
 
-print("Ricky's City server started: Milestone 2 test build")
+print("Ricky's City server started: Milestone 3 test build")

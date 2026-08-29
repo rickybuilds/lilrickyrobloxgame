@@ -101,7 +101,9 @@ end
 
 local function animateWheels(runtime: Runtime, steering: number, forwardSpeed: number, deltaTime: number)
 	runtime.WheelSpin += (forwardSpeed / VehicleConfig.Chassis.WheelRadius) * deltaTime
-	local steeringAngle = steering * math.rad(28)
+	-- The chassis yaw convention is opposite the Motor6D wheel-visual yaw
+	-- convention, so invert the display angle to match the direction of travel.
+	local steeringAngle = -steering * math.rad(28)
 
 	for wheelName, motor in runtime.WheelMotors do
 		local yaw = if wheelName == "FL" or wheelName == "FR" then steeringAngle else 0
@@ -220,6 +222,15 @@ function VehicleDynamics.Step(vehicle: Model, controls: ControlState, deltaTime:
 			- Vector3.new(angularVelocity.X, 0, angularVelocity.Z)
 				* VehicleConfig.Handling.UprightDamping
 				* mass
+		if parked then
+			-- A parked raycast chassis has no physical tire contact to naturally
+			-- resist yaw, so explicitly bleed off any leftover steering rotation.
+			uprightTorque += Vector3.new(
+				0,
+				-angularVelocity.Y * VehicleConfig.Handling.ParkAngularDamping * mass,
+				0
+			)
+		end
 		runtime.StabilityTorque.Torque = clampVector(
 			uprightTorque,
 			mass * VehicleConfig.Handling.MaximumUprightTorquePerMass
