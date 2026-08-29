@@ -250,15 +250,67 @@ local function createConvenienceStore(parent: Instance)
 end
 
 local function createPoliceStation(parent: Instance)
-	local station = makeBuildingShell(
-		parent,
-		"PoliceStation",
-		Vector3.new(-140, GameConfig.World.DrivingSurfaceY, 135),
-		Vector3.new(78, 30, 60),
-		Color3.fromRGB(155, 176, 200),
-		"POLICE STATION"
-	)
+	local station = Instance.new("Model")
+	station.Name = "PoliceStation"
+	station.Parent = parent
 	station:SetAttribute("ResponseOrigin", true)
+
+	local surfaceY = GameConfig.World.DrivingSurfaceY
+	local center = Vector3.new(-140, surfaceY, 135)
+	local wallColor = Color3.fromRGB(157, 178, 203)
+	local navy = Color3.fromRGB(34, 70, 125)
+	local darkMetal = Color3.fromRGB(52, 60, 72)
+	local glass = Color3.fromRGB(125, 205, 232)
+
+	-- A single base collision plane remains underneath the city. This thin floor
+	-- is visual-only so the stable vehicle suspension never sees another layer.
+	makePart({ Name = "StationFloor", Size = Vector3.new(78, 0.05, 60), Position = center + Vector3.new(0, 0.025, 0), Color = Color3.fromRGB(185, 190, 197), Material = Enum.Material.Concrete, CanCollide = false, CanQuery = false, Parent = station })
+	makePart({ Name = "BackWall", Size = Vector3.new(78, 22, 2), Position = center + Vector3.new(0, 11, 29), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+	makePart({ Name = "RightWall", Size = Vector3.new(2, 22, 60), Position = center + Vector3.new(39, 11, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+	makePart({ Name = "LeftWall", Size = Vector3.new(2, 22, 60), Position = center + Vector3.new(-39, 11, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+	makePart({ Name = "Roof", Size = Vector3.new(82, 1, 64), Position = center + Vector3.new(0, 22.5, 0), Color = navy, Material = Enum.Material.Metal, Parent = station })
+	makePart({ Name = "FrontHeader", Size = Vector3.new(78, 7, 2), Position = center + Vector3.new(0, 18.5, -29), Color = navy, Material = Enum.Material.Concrete, Parent = station })
+
+	-- Lobby facade: real walk-through doors framed by blue glass windows.
+	makePart({ Name = "LobbyEdgeLeft", Size = Vector3.new(4, 15, 2), Position = center + Vector3.new(-37, 7.5, -29), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+	makePart({ Name = "LobbyWindowLeft", Size = Vector3.new(8, 11, 0.5), Position = center + Vector3.new(-31, 7, -30.1), Color = glass, Material = Enum.Material.Glass, Transparency = 0.25, Parent = station })
+	local lobbyDoor = makePart({ Name = "LobbyDoors", Size = Vector3.new(8, 11, 0.35), Position = center + Vector3.new(-23, 7, -30.15), Color = glass, Material = Enum.Material.Glass, Transparency = 0.45, CanCollide = false, CanQuery = false, Parent = station })
+	addSurfaceLabel(lobbyDoor, "ENTER", Enum.NormalId.Front)
+	addSurfaceLabel(lobbyDoor, "EXIT", Enum.NormalId.Back)
+	makePart({ Name = "LobbyWindowRight", Size = Vector3.new(8, 11, 0.5), Position = center + Vector3.new(-15, 7, -30.1), Color = glass, Material = Enum.Material.Glass, Transparency = 0.25, Parent = station })
+	makePart({ Name = "LobbyEdgeRight", Size = Vector3.new(4, 15, 2), Position = center + Vector3.new(-9, 7.5, -29), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+
+	local canopy = makePart({ Name = "EntranceCanopy", Size = Vector3.new(24, 1, 8), Position = center + Vector3.new(-23, 14, -33), Color = navy, Material = Enum.Material.Metal, Parent = station })
+	makePart({ Name = "CanopyPostLeft", Size = Vector3.new(0.7, 13, 0.7), Position = center + Vector3.new(-34, 7, -36), Color = darkMetal, Material = Enum.Material.Metal, Parent = station })
+	makePart({ Name = "CanopyPostRight", Size = Vector3.new(0.7, 13, 0.7), Position = center + Vector3.new(-12, 7, -36), Color = darkMetal, Material = Enum.Material.Metal, Parent = station })
+	canopy:SetAttribute("LandmarkDetail", true)
+
+	-- Two open garage bays with raised doors. Police units still spawn outside at
+	-- response markers, so their tested physics lifecycle does not change.
+	for index, bayX in { -135, -113 } do
+		local localX = bayX - center.X
+		makePart({ Name = `GaragePillar{index}`, Size = Vector3.new(2, 16, 2), Position = center + Vector3.new(localX - 10, 8, -29), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+		local raisedDoor = makePart({ Name = `RaisedGarageDoor{index}`, Size = Vector3.new(18, 4, 0.5), Position = center + Vector3.new(localX, 14, -30.1), Color = darkMetal, Material = Enum.Material.Metal, CanCollide = false, Parent = station })
+		addSurfaceLabel(raisedDoor, `UNIT {index}`, Enum.NormalId.Front)
+		makePart({ Name = `GarageStripeLeft{index}`, Size = Vector3.new(0.35, 0.06, 52), Position = Vector3.new(bayX - 8, surfaceY + 0.06, 124), Color = Color3.fromRGB(245, 221, 94), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, Parent = station })
+		makePart({ Name = `GarageStripeRight{index}`, Size = Vector3.new(0.35, 0.06, 52), Position = Vector3.new(bayX + 8, surfaceY + 0.06, 124), Color = Color3.fromRGB(245, 221, 94), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, Parent = station })
+	end
+	makePart({ Name = "GarageRightPillar", Size = Vector3.new(2, 16, 2), Position = center + Vector3.new(38, 8, -29), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+
+	-- Lobby props make the building explorable without introducing another game
+	-- system or requiring third-party models.
+	makePart({ Name = "LobbyDivider", Size = Vector3.new(1, 16, 58), Position = center + Vector3.new(-7, 8, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = station })
+	local desk = makePart({ Name = "FrontDesk", Size = Vector3.new(18, 4, 4), Position = center + Vector3.new(-23, 2.5, -3), Color = Color3.fromRGB(98, 68, 48), Material = Enum.Material.Wood, Parent = station })
+	addSurfaceLabel(desk, "FRONT DESK", Enum.NormalId.Front)
+	makePart({ Name = "LobbyBenchLeft", Size = Vector3.new(7, 1.2, 2), Position = center + Vector3.new(-33, 1.6, -8), Color = Color3.fromRGB(64, 83, 105), Material = Enum.Material.Wood, Parent = station })
+	makePart({ Name = "LobbyBenchRight", Size = Vector3.new(7, 1.2, 2), Position = center + Vector3.new(-15, 1.6, -8), Color = Color3.fromRGB(64, 83, 105), Material = Enum.Material.Wood, Parent = station })
+
+	local stationSign = makePart({ Name = "StationSign", Size = Vector3.new(26, 4.5, 0.6), Position = center + Vector3.new(-23, 19, -30.2), Color = Color3.fromRGB(235, 239, 245), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = station })
+	addSurfaceLabel(stationSign, "POLICE", Enum.NormalId.Front)
+	makePart({ Name = "SignLightRed", Size = Vector3.new(2.5, 0.6, 0.8), Position = center + Vector3.new(-38, 19, -30.3), Color = Color3.fromRGB(255, 65, 65), Material = Enum.Material.Neon, CanCollide = false, Parent = station })
+	makePart({ Name = "SignLightBlue", Size = Vector3.new(2.5, 0.6, 0.8), Position = center + Vector3.new(-8, 19, -30.3), Color = Color3.fromRGB(65, 140, 255), Material = Enum.Material.Neon, CanCollide = false, Parent = station })
+
+	station.PrimaryPart = station:FindFirstChild("BackWall") :: BasePart
 end
 
 local function createJail(parent: Instance)
@@ -267,25 +319,42 @@ local function createJail(parent: Instance)
 	jail.Parent = parent
 
 	local surfaceY = GameConfig.World.DrivingSurfaceY
-	local center = Vector3.new(-194, surfaceY, 135)
+	local center = Vector3.new(-163, surfaceY, 153)
 	local wallColor = Color3.fromRGB(105, 116, 132)
+	local barColor = Color3.fromRGB(55, 62, 72)
+	local cellWidth = 7.5
+	local cellDepth = 20
 
-	makePart({ Name = "JailFloor", Size = Vector3.new(18, 0.4, 18), Position = center + Vector3.new(0, 0.2, 0), Color = Color3.fromRGB(125, 132, 143), Material = Enum.Material.Concrete, Parent = jail })
-	makePart({ Name = "BackWall", Size = Vector3.new(18, 9, 1), Position = center + Vector3.new(0, 4.5, 8.5), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
-	makePart({ Name = "LeftWall", Size = Vector3.new(1, 9, 18), Position = center + Vector3.new(-8.5, 4.5, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
-	makePart({ Name = "RightWall", Size = Vector3.new(1, 9, 18), Position = center + Vector3.new(8.5, 4.5, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
-	makePart({ Name = "Roof", Size = Vector3.new(18, 1, 18), Position = center + Vector3.new(0, 9, 0), Color = wallColor, Material = Enum.Material.Metal, Parent = jail })
+	-- Four cells occupy the rear-left detention wing inside the station shell.
+	makePart({ Name = "JailFloor", Size = Vector3.new(30, 0.05, cellDepth), Position = center + Vector3.new(0, 0.06, 0), Color = Color3.fromRGB(125, 132, 143), Material = Enum.Material.Concrete, CanCollide = false, CanQuery = false, Parent = jail })
+	makePart({ Name = "BackWall", Size = Vector3.new(30, 8, 0.6), Position = center + Vector3.new(0, 4, cellDepth / 2), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
+	makePart({ Name = "CellCeiling", Size = Vector3.new(30, 0.6, cellDepth), Position = center + Vector3.new(0, 8.3, 0), Color = wallColor, Material = Enum.Material.Metal, Parent = jail })
 
-	for offset = -7, 7, 2 do
-		makePart({ Name = "FrontBar", Size = Vector3.new(0.35, 8, 0.35), Position = center + Vector3.new(offset, 4, -8.5), Color = Color3.fromRGB(55, 62, 72), Material = Enum.Material.Metal, Parent = jail })
+	for dividerIndex = 0, 4 do
+		local dividerX = -15 + dividerIndex * cellWidth
+		makePart({ Name = `CellDivider{dividerIndex}`, Size = Vector3.new(0.45, 8, cellDepth), Position = center + Vector3.new(dividerX, 4, 0), Color = wallColor, Material = Enum.Material.Concrete, Parent = jail })
 	end
 
-	local sign = makePart({ Name = "JailSign", Size = Vector3.new(12, 3, 0.5), Position = center + Vector3.new(0, 7, -8.8), Color = Color3.fromRGB(35, 75, 135), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = jail })
-	addSurfaceLabel(sign, "JAIL", Enum.NormalId.Front)
+	for cellIndex = 1, 4 do
+		local cellX = -15 + (cellIndex - 0.5) * cellWidth
+		for barIndex = 1, 7 do
+			local barOffset = barIndex - 4
+			makePart({ Name = `Cell{cellIndex}FrontBar{barIndex}`, Size = Vector3.new(0.3, 8, 0.3), Position = center + Vector3.new(cellX + barOffset, 4, -cellDepth / 2), Color = barColor, Material = Enum.Material.Metal, Parent = jail })
+		end
+		makePart({ Name = `Cell{cellIndex}CrossBarLow`, Size = Vector3.new(cellWidth, 0.3, 0.3), Position = center + Vector3.new(cellX, 2.5, -cellDepth / 2), Color = barColor, Material = Enum.Material.Metal, Parent = jail })
+		makePart({ Name = `Cell{cellIndex}CrossBarHigh`, Size = Vector3.new(cellWidth, 0.3, 0.3), Position = center + Vector3.new(cellX, 6.2, -cellDepth / 2), Color = barColor, Material = Enum.Material.Metal, Parent = jail })
 
-	local jailSpawn = makePart({ Name = "JailSpawn", Size = Vector3.new(3, 0.2, 3), Position = center + Vector3.new(0, 0.6, 0), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
-	jailSpawn:SetAttribute("SpawnType", "Jail")
-	local releaseSpawn = makePart({ Name = "ReleaseSpawn", Size = Vector3.new(3, 0.2, 3), Position = center + Vector3.new(0, 0.6, -13), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
+		local cellSign = makePart({ Name = `CellSign{cellIndex}`, Size = Vector3.new(5.8, 1.2, 0.4), Position = center + Vector3.new(cellX, 7.2, -(cellDepth / 2 + 0.25)), Color = Color3.fromRGB(35, 75, 135), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = jail })
+		addSurfaceLabel(cellSign, `CELL {cellIndex}`, Enum.NormalId.Front)
+
+		local cellSpawn = makePart({ Name = `CellSpawn{cellIndex}`, Size = Vector3.new(2, 0.2, 2), Position = center + Vector3.new(cellX, 0.6, 1), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
+		cellSpawn:SetAttribute("SpawnType", "JailCell")
+	end
+
+	local sign = makePart({ Name = "JailSign", Size = Vector3.new(18, 2.5, 0.5), Position = center + Vector3.new(0, 10.2, -(cellDepth / 2 + 0.3)), Color = Color3.fromRGB(35, 75, 135), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = jail })
+	addSurfaceLabel(sign, "HOLDING CELLS", Enum.NormalId.Front)
+
+	local releaseSpawn = makePart({ Name = "ReleaseSpawn", Size = Vector3.new(3, 0.2, 3), Position = Vector3.new(-163, surfaceY + 0.6, 99), Transparency = 1, CanCollide = false, CanQuery = false, Parent = jail })
 	releaseSpawn:SetAttribute("SpawnType", "PoliceRelease")
 end
 
@@ -320,8 +389,8 @@ local function createSpawns(parent: Instance)
 	policeSpawns.Parent = spawns
 
 	for index, position in {
-		Vector3.new(-118, GameConfig.World.DrivingSurfaceY, 102),
-		Vector3.new(-145, GameConfig.World.DrivingSurfaceY, 102),
+		Vector3.new(-135, GameConfig.World.DrivingSurfaceY, 94),
+		Vector3.new(-113, GameConfig.World.DrivingSurfaceY, 94),
 	} do
 		local marker = makePart({
 			Name = `StationResponse{index}`,

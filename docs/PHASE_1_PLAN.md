@@ -120,7 +120,7 @@ Test checklist:
 
 Add wanted severity, one police response vehicle/NPC, sensible station/patrol spawning, target selection, vehicle pursuit, on-foot pursuit, and a basic arrest result.
 
-Current step: **Full Milestone 4 implemented; awaiting Studio acceptance test.**
+Status: **Stable.** A separate 4P polish pass improves the police station and its indoor four-cell jail before Milestone 5.
 
 Test checklist:
 

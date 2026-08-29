@@ -4,7 +4,7 @@
 -- this shape and change tuning without changing VehicleDynamics.
 local VehicleConfig = {
 	ModelName = "StarterCar",
-	DisplayName = "Ricky Roadster",
+	DisplayName = "Gleep Glorp",
 
 	Attributes = {
 		IsVehicle = "IsVehicle",

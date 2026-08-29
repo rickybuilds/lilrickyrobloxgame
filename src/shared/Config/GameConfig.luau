@@ -4,7 +4,7 @@
 -- Gameplay code should read this table instead of scattering magic numbers.
 local GameConfig = {
 	GameName = "Ricky's City",
-	WorldVersion = 3,
+	WorldVersion = 5,
 
 	PlayerDefaults = {
 		Money = 0,

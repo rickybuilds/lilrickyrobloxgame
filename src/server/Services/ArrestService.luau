@@ -12,8 +12,9 @@ local WantedService = require(script.Parent.WantedService)
 
 local ArrestService = {}
 local started = false
-local activeArrests: { [Player]: boolean } = {}
-local jailSpawn: BasePart
+local activeArrests: { [Player]: BasePart } = {}
+local jailCells: { BasePart } = {}
+local reservedCells: { [BasePart]: Player } = {}
 local releaseSpawn: BasePart
 
 local function getCharacterParts(player: Player): (Model?, Humanoid?, BasePart?)
@@ -31,7 +32,8 @@ end
 
 local function placeInJail(player: Player): boolean
 	local character, humanoid, root = getCharacterParts(player)
-	if not character or not humanoid or not root or not activeArrests[player] then
+	local cell = activeArrests[player]
+	if not character or not humanoid or not root or not cell then
 		return false
 	end
 
@@ -39,7 +41,7 @@ local function placeInJail(player: Player): boolean
 	humanoid.WalkSpeed = 0
 	humanoid.JumpPower = 0
 	humanoid.AutoRotate = false
-	character:PivotTo(jailSpawn.CFrame + Vector3.new(0, 3, 0))
+	character:PivotTo(cell.CFrame + Vector3.new(0, 3, 0))
 	root.AssemblyLinearVelocity = Vector3.zero
 	root.AssemblyAngularVelocity = Vector3.zero
 	root.Anchored = true
@@ -47,6 +49,10 @@ local function placeInJail(player: Player): boolean
 end
 
 local function releasePlayer(player: Player)
+	local cell = activeArrests[player]
+	if cell then
+		reservedCells[cell] = nil
+	end
 	activeArrests[player] = nil
 	player:SetAttribute(GameConfig.Attributes.Arrested, false)
 
@@ -76,12 +82,18 @@ function ArrestService.Start()
 	local world = workspace:WaitForChild(GameConfig.World.ContainerName)
 	local landmarks = world:WaitForChild("Landmarks")
 	local jail = landmarks:WaitForChild("Jail")
-	local jailSpawnInstance = jail:WaitForChild("JailSpawn")
 	local releaseSpawnInstance = jail:WaitForChild("ReleaseSpawn")
-	assert(jailSpawnInstance:IsA("BasePart"), "JailSpawn must be a BasePart")
 	assert(releaseSpawnInstance:IsA("BasePart"), "ReleaseSpawn must be a BasePart")
-	jailSpawn = jailSpawnInstance
 	releaseSpawn = releaseSpawnInstance
+	for _, child in jail:GetChildren() do
+		if child:IsA("BasePart") and child:GetAttribute("SpawnType") == "JailCell" then
+			table.insert(jailCells, child)
+		end
+	end
+	table.sort(jailCells, function(left, right)
+		return left.Name < right.Name
+	end)
+	assert(#jailCells == 4, "ArrestService requires four JailCell spawn parts")
 
 	local function watchPlayer(player: Player)
 		player.CharacterAdded:Connect(function()
@@ -108,12 +120,26 @@ function ArrestService.Start()
 		watchPlayer(player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		local cell = activeArrests[player]
+		if cell then
+			reservedCells[cell] = nil
+		end
 		activeArrests[player] = nil
 	end)
 end
 
 function ArrestService.IsArrested(player: Player): boolean
-	return activeArrests[player] == true
+	return activeArrests[player] ~= nil
+end
+
+local function reserveCell(player: Player): BasePart?
+	for _, cell in jailCells do
+		if reservedCells[cell] == nil then
+			reservedCells[cell] = player
+			return cell
+		end
+	end
+	return nil
 end
 
 function ArrestService.Arrest(player: Player): boolean
@@ -122,7 +148,11 @@ function ArrestService.Arrest(player: Player): boolean
 		return false
 	end
 
-	activeArrests[player] = true
+	local cell = reserveCell(player)
+	if not cell then
+		return false
+	end
+	activeArrests[player] = cell
 	player:SetAttribute(GameConfig.Attributes.Arrested, true)
 	VehicleService.ForceExit(player)
 
