@@ -2,17 +2,18 @@
 
 An age-appropriate Roblox open-world driving and cops-vs-criminals game being built one playable milestone at a time.
 
-## Current build: Milestone 1 — Playable Foundation
+## Current build: Milestone 2 — Drivable Car Test Build
 
-Milestone 1 includes:
+Milestone 1 is the stable baseline. The current test build adds:
 
-- A generated blockout city with roads and sidewalks
-- A player spawn, police station, convenience-store shell, and future vehicle spawn
-- Server-owned session money and wanted level
-- A basic HUD for money, wanted level, and activity status
-- Clean service/controller folders ready for the later systems
+- One original arcade-style car generated from safe Parts
+- Server-validated driver and passenger entry prompts
+- Acceleration, braking/reverse, steering, suspension, grip, and handbrake
+- Server-controlled seat assignment, health, exits, and network ownership
+- A driver-only speedometer and vehicle health display
+- Keyboard, gamepad, and touch-ready action bindings
 
-It intentionally does **not** include a drivable car, robbery payout, or police AI yet. Those are separate milestones with their own tests.
+It intentionally does **not** include robbery payout or police AI yet. Those remain later milestones.
 
 ## Open it in Roblox Studio
 
@@ -26,14 +27,19 @@ This project uses [Rojo](https://rojo.space/) so the readable Luau source files 
 
 The city is created when the server starts. It appears under `Workspace > GameWorld` while playing.
 
-## Milestone 1 test checklist
+## Milestone 2 test checklist
 
-- [ ] The player spawns on a green pad beside the main intersection.
-- [ ] The city has two crossing roads, sidewalks, simple buildings, a convenience store, and a police station.
-- [ ] The top-left HUD shows `$0` and wanted level `0`.
-- [ ] The bottom activity banner says `Explore the city`.
-- [ ] Starting a two-player local test gives each player a separate HUD and server-owned state.
+- [ ] The red car appears over the blue vehicle pad without falling through the road.
+- [ ] The nearby **Drive** prompt seats one player in the driver seat.
+- [ ] `W/S` accelerates, brakes, and reverses; `A/D` steers.
+- [ ] Holding `Space` engages the handbrake and updates the vehicle HUD.
+- [ ] `P` parks the car; pressing the throttle automatically releases park.
+- [ ] The speedometer appears only for the driver and changes while moving.
+- [ ] Pressing `E` exits beside the vehicle instead of underneath it.
+- [ ] A second player can use **Ride** but cannot control the car.
+- [ ] Two players cannot occupy the driver seat simultaneously.
+- [ ] Resetting or leaving returns vehicle network control safely.
+- [ ] The Milestone 1 HUD and respawn behavior still work.
 - [ ] The Output window has no red errors.
 
-See [docs/PHASE_1_PLAN.md](docs/PHASE_1_PLAN.md) for the architecture and full MVP milestone plan.
-
+See [docs/MILESTONE_2_TEST.md](docs/MILESTONE_2_TEST.md) for the complete controls and test procedure.

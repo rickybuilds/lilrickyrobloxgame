@@ -78,7 +78,7 @@ For the first car, a simple chassis can be built from Parts in Studio or from ou
 
 ## Implementation milestones
 
-### Milestone 1 — Playable foundation (implemented)
+### Milestone 1 — Playable foundation (stable)
 
 Create the project skeleton, generated test city, server-owned player state, and HUD.
 
@@ -89,7 +89,7 @@ Test checklist:
 - Confirm money `$0`, wanted `0`, and `Explore the city` appear.
 - Confirm a two-player Studio test works without errors.
 
-### Milestone 2 — One drivable car
+### Milestone 2 — One drivable car (implemented; awaiting Studio acceptance test)
 
 Add one arcade car, server-controlled seat assignment, enter/exit interaction, acceleration, braking, steering, reverse, handbrake, health, and reset-if-stuck behavior.
 
@@ -144,4 +144,3 @@ Test checklist:
 - The server owns shared cooldowns and uses one-way state transitions to prevent duplicate payouts.
 - Client requests are rate-limited once remotes exist.
 - DataStore persistence is isolated behind a player data service and tested separately before release.
-
