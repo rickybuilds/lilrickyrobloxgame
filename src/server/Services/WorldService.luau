@@ -731,7 +731,7 @@ local function createConvenienceStore(parent: Instance)
 		CanCollide = false,
 		Parent = store,
 	})
-	addSurfaceLabel(comingSoon, "ROB THE REGISTER", Enum.NormalId.Front)
+	addSurfaceLabel(comingSoon, "COST $50  •  WIN $250", Enum.NormalId.Front)
 	store.PrimaryPart = counter
 end
 
@@ -789,7 +789,7 @@ local function createRobberyLocation(
 		Size = Vector3.new(width + 1, 0.8, depth + 1),
 		Position = origin + Vector3.new(0, height + 0.4, 0),
 		Color = definition.AccentColor,
-		Material = if definition.Variant == "Arcade" then Enum.Material.Neon else Enum.Material.Metal,
+		Material = if definition.Variant == "Arcade" then Enum.Material.SmoothPlastic else Enum.Material.Metal,
 		Parent = location,
 	})
 
@@ -809,12 +809,12 @@ local function createRobberyLocation(
 		Size = Vector3.new(width - 6, 1.2, 0.7),
 		Position = origin + Vector3.new(0, height - 4.4, frontDirection * (depth / 2 + 0.4)),
 		Color = definition.AccentColor,
-		Material = Enum.Material.Neon,
+		Material = Enum.Material.SmoothPlastic,
 		CanCollide = false,
 		CanQuery = false,
 		Parent = location,
 	})
-	addSurfaceLabel(tierStrip, `TIER {definition.Tier}  ${definition.Reward}`, frontFace)
+	addSurfaceLabel(tierStrip, `COST ${definition.Cost}  •  WIN ${definition.Reward}`, frontFace)
 
 	local targetSize = if definition.Variant == "Arcade"
 		then Vector3.new(5, 7, 4)
@@ -854,7 +854,7 @@ local function createRobberyLocation(
 				Size = Vector3.new(4, 6, 4),
 				Position = origin + Vector3.new(x, 3, -frontDirection * (depth / 2 - 3)),
 				Color = definition.AccentColor,
-				Material = Enum.Material.Neon,
+				Material = Enum.Material.SmoothPlastic,
 				Parent = location,
 			})
 		end
@@ -1102,17 +1102,27 @@ local function createArrivalHub(parent: Instance, spawns: Instance)
 	local platformY = center.Y - 4
 
 	makePart({ Name = "HubPlatform", Size = Vector3.new(120, 2, 80), Position = Vector3.new(center.X, platformY, center.Z), Color = Color3.fromRGB(38, 48, 66), Material = Enum.Material.Slate, Parent = hub })
-	makePart({ Name = "CenterGlow", Size = Vector3.new(42, 0.3, 24), Position = Vector3.new(center.X, platformY + 1.15, center.Z + 12), Color = Color3.fromRGB(79, 215, 255), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, Parent = hub })
+	makePart({ Name = "CenterSpawnPad", Size = Vector3.new(42, 0.3, 24), Position = Vector3.new(center.X, platformY + 1.15, center.Z + 12), Color = Color3.fromRGB(67, 83, 105), Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Parent = hub })
 
-	local wallColor = Color3.fromRGB(120, 205, 235)
+	local wallColor = Color3.fromRGB(72, 88, 112)
 	for wallIndex, wall in {
-		{ Size = Vector3.new(120, 18, 1), Position = Vector3.new(center.X, platformY + 9, center.Z - 40) },
-		{ Size = Vector3.new(120, 18, 1), Position = Vector3.new(center.X, platformY + 9, center.Z + 40) },
-		{ Size = Vector3.new(1, 18, 80), Position = Vector3.new(center.X - 60, platformY + 9, center.Z) },
-		{ Size = Vector3.new(1, 18, 80), Position = Vector3.new(center.X + 60, platformY + 9, center.Z) },
+		{ Size = Vector3.new(120, 26, 2), Position = Vector3.new(center.X, platformY + 13, center.Z - 40) },
+		{ Size = Vector3.new(120, 26, 2), Position = Vector3.new(center.X, platformY + 13, center.Z + 40) },
+		{ Size = Vector3.new(2, 26, 80), Position = Vector3.new(center.X - 60, platformY + 13, center.Z) },
+		{ Size = Vector3.new(2, 26, 80), Position = Vector3.new(center.X + 60, platformY + 13, center.Z) },
 	} do
-		makePart({ Name = `GlassBarrier{wallIndex}`, Size = wall.Size, Position = wall.Position, Color = wallColor, Material = Enum.Material.Glass, Transparency = 0.55, Parent = hub })
+		makePart({ Name = `HubWall{wallIndex}`, Size = wall.Size, Position = wall.Position, Color = wallColor, Material = Enum.Material.Concrete, Transparency = 0, Parent = hub })
 	end
+	makePart({ Name = "HubCeiling", Size = Vector3.new(120, 2, 80), Position = Vector3.new(center.X, platformY + 26, center.Z), Color = Color3.fromRGB(47, 58, 76), Material = Enum.Material.Concrete, Parent = hub })
+	local ceilingPanel = makePart({ Name = "CeilingPanel", Size = Vector3.new(72, 0.4, 38), Position = Vector3.new(center.X, platformY + 24.8, center.Z), Color = Color3.fromRGB(172, 181, 193), Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Parent = hub })
+	local ceilingLight = Instance.new("SurfaceLight")
+	ceilingLight.Name = "ArrivalRoomLight"
+	ceilingLight.Face = Enum.NormalId.Bottom
+	ceilingLight.Brightness = 0.8
+	ceilingLight.Range = 60
+	ceilingLight.Angle = 180
+	ceilingLight.Shadows = false
+	ceilingLight.Parent = ceilingPanel
 
 	local title = makePart({ Name = "ArrivalTitle", Size = Vector3.new(54, 7, 1), Position = Vector3.new(center.X, platformY + 12, center.Z + 31), Color = Color3.fromRGB(22, 30, 43), Material = Enum.Material.SmoothPlastic, CanCollide = false, Parent = hub })
 	addSurfaceLabel(title, "CHOOSE YOUR DISTRICT", Enum.NormalId.Front)
@@ -1124,9 +1134,9 @@ local function createArrivalHub(parent: Instance, spawns: Instance)
 	arrivalSpawn.Anchored = true
 	arrivalSpawn.Size = Vector3.new(14, 1, 14)
 	arrivalSpawn.Position = center
-	arrivalSpawn.Color = Color3.fromRGB(79, 215, 255)
-	arrivalSpawn.Material = Enum.Material.Neon
-	arrivalSpawn.Transparency = 0.25
+	arrivalSpawn.Color = Color3.fromRGB(67, 83, 105)
+	arrivalSpawn.Material = Enum.Material.SmoothPlastic
+	arrivalSpawn.Transparency = 1
 	arrivalSpawn.Neutral = true
 	arrivalSpawn.Parent = spawns
 
@@ -1137,7 +1147,7 @@ local function createArrivalHub(parent: Instance, spawns: Instance)
 			platformY + 3.5,
 			center.Z - 22
 		)
-		local gate = makePart({ Name = `SpawnGate_{choice.Id}`, Size = Vector3.new(17, 7, 3), Position = gatePosition, Color = choice.Color, Material = Enum.Material.Neon, Parent = hub })
+		local gate = makePart({ Name = `SpawnGate_{choice.Id}`, Size = Vector3.new(17, 7, 3), Position = gatePosition, Color = choice.Color, Material = Enum.Material.SmoothPlastic, Parent = hub })
 		gate:SetAttribute("SpawnChoiceId", choice.Id)
 		addSurfaceLabel(gate, choice.DisplayName, Enum.NormalId.Back)
 		local gateBase = makePart({ Name = `GateBase_{choice.Id}`, Size = Vector3.new(18, 0.5, 10), Position = gatePosition + Vector3.new(0, -3.25, 4), Color = choice.Color, Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Parent = hub })
@@ -1155,7 +1165,7 @@ local function createDistrictSpawnsAndRentals(parent: Instance, spawns: Instance
 	local surfaceY = GameConfig.World.DrivingSurfaceY
 
 	for _, choice in SpawnConfig.Choices do
-		local pad = makePart({ Name = `ArrivalPad_{choice.Id}`, Size = Vector3.new(12, 0.2, 12), Position = Vector3.new(choice.Position.X, surfaceY + 0.12, choice.Position.Z), Color = choice.Color, Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, Parent = rentals })
+		local pad = makePart({ Name = `ArrivalPad_{choice.Id}`, Size = Vector3.new(12, 0.2, 12), Position = Vector3.new(choice.Position.X, surfaceY + 0.12, choice.Position.Z), Color = choice.Color, Material = Enum.Material.SmoothPlastic, CanCollide = false, CanQuery = false, Parent = rentals })
 		addSurfaceLabel(pad, choice.DisplayName, Enum.NormalId.Top)
 
 		local destination = Instance.new("SpawnLocation")
@@ -1178,11 +1188,27 @@ local function createDistrictSpawnsAndRentals(parent: Instance, spawns: Instance
 		local roof = makePart({ Name = `RentalRoof_{choice.Id}`, Size = Vector3.new(13, 0.7, 9), Position = kioskPosition + Vector3.new(0, 8, 0), Color = Color3.fromRGB(35, 41, 54), Material = Enum.Material.Metal, Parent = rentals })
 		roof:SetAttribute("RentalKioskId", choice.Id)
 
-		local rentalMarker = makePart({ Name = `RentalSpawn_{choice.Id}`, Size = Vector3.new(9, 0.2, 16), Position = Vector3.new(choice.RentalSpawnPosition.X, surfaceY + 0.12, choice.RentalSpawnPosition.Z), Color = choice.Color, Material = Enum.Material.Neon, Transparency = 0.35, CanCollide = false, CanQuery = false, Parent = spawns })
+		local rentalMarker = makePart({ Name = `RentalSpawn_{choice.Id}`, Size = Vector3.new(9, 0.2, 16), Position = Vector3.new(choice.RentalSpawnPosition.X, surfaceY + 0.12, choice.RentalSpawnPosition.Z), Color = choice.Color, Material = Enum.Material.SmoothPlastic, Transparency = 0, CanCollide = false, CanQuery = false, Parent = spawns })
 		rentalMarker.CFrame = CFrame.new(rentalMarker.Position) * CFrame.Angles(0, math.rad(choice.RentalSpawnYaw), 0)
 		rentalMarker:SetAttribute("RentalSpawnId", choice.Id)
 		addSurfaceLabel(rentalMarker, "RENTAL CAR", Enum.NormalId.Top)
 	end
+
+	-- Arrested players may have left their previous rental anywhere in the city.
+	-- This depot sits beside ReleaseSpawn and replaces that old rental normally.
+	local releaseRental = SpawnConfig.ReleaseRental
+	local releaseKioskPosition = Vector3.new(releaseRental.KioskPosition.X, surfaceY, releaseRental.KioskPosition.Z)
+	makePart({ Name = "JailReleaseRentalStand", Size = Vector3.new(12, 0.4, 10), Position = releaseKioskPosition + Vector3.new(0, 0.22, 0), Color = Color3.fromRGB(55, 62, 75), Material = Enum.Material.Metal, Parent = rentals })
+	local releaseKiosk = makePart({ Name = "RentalKiosk_JailRelease", Size = Vector3.new(8, 7, 4), Position = releaseKioskPosition + Vector3.new(0, 3.7, 0), Color = releaseRental.Color, Material = Enum.Material.SmoothPlastic, Parent = rentals })
+	releaseKiosk.CFrame = CFrame.new(releaseKiosk.Position) * CFrame.Angles(0, math.rad(-90), 0)
+	releaseKiosk:SetAttribute("RentalKioskId", releaseRental.Id)
+	addSurfaceLabel(releaseKiosk, "RENT / REPLACE CAR\n$100", Enum.NormalId.Front)
+	makePart({ Name = "JailReleaseRentalRoof", Size = Vector3.new(13, 0.7, 9), Position = releaseKioskPosition + Vector3.new(0, 8, 0), Color = Color3.fromRGB(35, 41, 54), Material = Enum.Material.Metal, Parent = rentals })
+
+	local releaseMarker = makePart({ Name = "RentalSpawn_JailRelease", Size = Vector3.new(9, 0.2, 16), Position = Vector3.new(releaseRental.SpawnPosition.X, surfaceY + 0.12, releaseRental.SpawnPosition.Z), Color = releaseRental.Color, Material = Enum.Material.SmoothPlastic, Transparency = 0, CanCollide = false, CanQuery = false, Parent = spawns })
+	releaseMarker.CFrame = CFrame.new(releaseMarker.Position) * CFrame.Angles(0, math.rad(releaseRental.SpawnYaw), 0)
+	releaseMarker:SetAttribute("RentalSpawnId", releaseRental.Id)
+	addSurfaceLabel(releaseMarker, "JAIL RELEASE RENTAL", Enum.NormalId.Top)
 end
 
 local function createSpawns(parent: Instance)

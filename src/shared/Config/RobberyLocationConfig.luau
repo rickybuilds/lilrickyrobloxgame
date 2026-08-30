@@ -11,6 +11,7 @@ export type LocationDefinition = {
 	TargetName: string,
 	Variant: LocationVariant,
 	Tier: number,
+	Cost: number,
 	Reward: number,
 	Duration: number,
 	Cooldown: number,
@@ -42,10 +43,11 @@ local function addLocation(
 )
 	local index = #locations + 1
 	local palette = palettes[((index - 1) % #palettes) + 1]
-	local baseReward = if tier == 1 then 50 elseif tier == 2 then 200 else 600
+	local baseCost = if tier == 1 then 50 elseif tier == 2 then 200 else 600
 	local baseDuration = if tier == 1 then 5 elseif tier == 2 then 8 else 12
 	local baseCooldown = if tier == 1 then 30 elseif tier == 2 then 45 else 70
 
+	local cost = baseCost + ((index - 1) % 5) * (if tier == 1 then 25 elseif tier == 2 then 50 else 100)
 	table.insert(locations, {
 		Id = id,
 		DisplayName = displayName,
@@ -53,7 +55,8 @@ local function addLocation(
 		TargetName = targetName,
 		Variant = variant,
 		Tier = tier,
-		Reward = baseReward + ((index - 1) % 5) * (if tier == 1 then 25 elseif tier == 2 then 50 else 100),
+		Cost = cost,
+		Reward = cost * 2,
 		Duration = baseDuration + ((index - 1) % 3),
 		Cooldown = baseCooldown + ((index - 1) % 4) * 5,
 		CrimeId = if tier == 1 then "MinorRobbery" elseif tier == 2 then "StoreRobbery" else "MajorRobbery",

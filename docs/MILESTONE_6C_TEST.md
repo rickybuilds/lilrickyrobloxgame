@@ -24,16 +24,21 @@ Repeat the discovery portion at multiple gates.
 - [ ] Another player can ride in the passenger seat.
 - [ ] With less than `$100`, the kiosk refuses the rental and deducts nothing.
 - [ ] After earning more money, renting again charges `$100` and replaces the player's previous rental.
+- [ ] After arrest and jail release, find the nearby `RENT / REPLACE CAR $100` kiosk.
+- [ ] Renting beside jail replaces the abandoned rental and spawns the new car on the release rental pad.
 - [ ] Two players can own separate rentals without overwriting each other.
 - [ ] A player's rental disappears when that player leaves the server.
 
-## Economy test
+## Robbery cost and economy test
 
-- [ ] Tier 1 robberies advertise and pay `$50`–`$150`.
-- [ ] Tier 2 robberies advertise and pay `$200`–`$400`.
-- [ ] Tier 3 robberies advertise and pay `$600`–`$1,000`.
-- [ ] The original Quick Stop still pays `$250`.
-- [ ] Cancelling a robbery awards nothing.
+- [ ] Tier 1 robberies advertise costs of `$50`–`$150` and payouts of `$100`–`$300`.
+- [ ] Tier 2 robberies advertise costs of `$200`–`$400` and payouts of `$400`–`$800`.
+- [ ] Tier 3 robberies advertise costs of `$600`–`$1,000` and payouts of `$1,200`–`$2,000`.
+- [ ] The original Quick Stop costs `$50` and still pays `$250`.
+- [ ] Starting a robbery deducts its exact advertised cost immediately and only once.
+- [ ] A player who cannot afford the cost receives a message, loses no money, and cannot begin.
+- [ ] Cancelling after starting awards nothing and does not refund the entry cost.
+- [ ] Completing awards the displayed success payout after the cost was already charged.
 - [ ] Arrest confiscation and successful-escape money behavior remain correct.
 
 ## Expanded police network

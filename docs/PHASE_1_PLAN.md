@@ -164,7 +164,7 @@ Status: **Implemented; awaiting Roblox Studio runtime and multiplayer validation
 
 ### Milestone 6C — Arrival, rentals, and city economy
 
-Add an enclosed first-join arrival terminal with five physical district gates. A player's selection becomes their session respawn point. Every destination has a server-authoritative $100 Gleep Glorp rental kiosk, players begin with $150, and the forty new robbery payouts range from $50 to $1,000. Five satellite precincts bring the police network to six stations and twelve response lanes.
+Add an enclosed first-join arrival terminal with five physical district gates. A player's selection becomes their session respawn point. Every destination and the jail release area have a server-authoritative $100 Gleep Glorp rental kiosk. Players begin with $150, and the forty new robberies charge entry costs from $50 to $1,000 before paying a larger success reward. Five satellite precincts bring the police network to six stations and twelve response lanes.
 
 Status: **Implemented; awaiting Roblox Studio runtime, economy, and multiplayer validation.**
 

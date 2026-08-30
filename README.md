@@ -19,8 +19,8 @@ Milestone 5 is the stable, complete Phase 1 gameplay baseline. Milestone 6C keep
 - Unique location names, interaction text, targets, rewards, countdowns, and cooldowns
 - An enclosed sky arrival terminal with five district-selection gates
 - Session respawns at the chosen Downtown, Northside, Eastside, Southside, or Westside location
-- A $100 Gleep Glorp rental kiosk at every district arrival point
-- A $150 starting balance and robbery payouts ranging from $50 to $1,000
+- A $100 Gleep Glorp rental kiosk at every district arrival point and beside jail release
+- A $150 starting balance, robbery entry costs from $50 to $1,000, and profitable success payouts
 - Six total police stations and twelve reasonable response lanes around the enlarged city
 
 All road, alley, sidewalk, parking-lot, and park skins remain non-collidable above one continuous ground plane, preserving the stable arcade vehicle physics.
@@ -43,6 +43,8 @@ The city is created when the server starts. It appears under `Workspace > GameWo
 - [ ] Choose one of five gates and arrive beside that district's rental kiosk.
 - [ ] Reset the character and confirm it respawns in the chosen district, not the terminal.
 - [ ] Rent a Gleep Glorp for `$100` and confirm the balance becomes `$50`.
+- [ ] Start an affordable robbery and confirm its advertised cost is deducted immediately.
+- [ ] Confirm a robbery that costs more than the current balance cannot begin.
 - [ ] Confirm another player cannot drive the rental but can use its passenger seat.
 - [ ] Drive the complete outer loop and several interior streets without falling or sinking.
 - [ ] Find multiple signed robbery locations throughout the outer districts.
@@ -52,6 +54,7 @@ The city is created when the server starts. It appears under `Workspace > GameWo
 - [ ] Confirm each location has its own cooldown and another location can still be robbed.
 - [ ] Use the expanded city to escape the responding police and keep the reward.
 - [ ] Find the five satellite precincts and confirm police dispatch from a sensible nearby response lane.
+- [ ] After jail release, use the nearby rental kiosk to replace an abandoned car.
 - [ ] Confirm two players can rob different locations without sharing money or wanted state.
 - [ ] The Output window has no red errors.
 

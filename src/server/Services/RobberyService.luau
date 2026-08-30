@@ -18,6 +18,7 @@ type StoreState = "Ready" | "Active" | "Cooldown"
 type StoreRuntime = {
 	Id: string,
 	DisplayName: string,
+	Cost: number,
 	Reward: number,
 	Duration: number,
 	Cooldown: number,
@@ -145,6 +146,11 @@ local function beginRobbery(player: Player, store: StoreRuntime)
 	if activeStoreByPlayer[player] ~= nil or not isPlayerNearStore(player, store) then
 		return
 	end
+	local balance = EconomyService.TrySpendMoney(player, store.Cost, `robbery-entry:{store.Id}`)
+	if balance == nil then
+		setTemporaryPlayerStatus(player, `You need ${store.Cost} to rob {store.DisplayName}`)
+		return
+	end
 
 	store.State = "Active"
 	store.ActivePlayer = player
@@ -152,17 +158,17 @@ local function beginRobbery(player: Player, store: StoreRuntime)
 	store.LastDisplayedSecond = -1
 	store.Prompt.Enabled = false
 	activeStoreByPlayer[player] = store
-	PlayerStateService.SetRobberyStatus(player, `Robbing {store.DisplayName}: {math.ceil(store.Duration)}s`)
+	PlayerStateService.SetRobberyStatus(player, `Paid ${store.Cost} • Robbing {store.DisplayName}: {math.ceil(store.Duration)}s`)
 	setWorldStatus(store, "ROBBERY IN PROGRESS", Color3.fromRGB(255, 90, 90))
 end
 
 local function createStatusLabel(register: BasePart): TextLabel
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "RobberyStatusGui"
-	billboard.Size = UDim2.fromOffset(220, 54)
-	billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+	billboard.Size = UDim2.fromOffset(140, 32)
+	billboard.StudsOffset = Vector3.new(0, 1.3, 0)
 	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 80
+	billboard.MaxDistance = 50
 	billboard.Adornee = register
 	billboard.Parent = register
 
@@ -170,7 +176,7 @@ local function createStatusLabel(register: BasePart): TextLabel
 	label.Name = "Status"
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundColor3 = Color3.fromRGB(22, 27, 35)
-	label.BackgroundTransparency = 0.15
+	label.BackgroundTransparency = 0.25
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
@@ -198,7 +204,7 @@ local function registerStore(register: BasePart, storeId: string)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "RobberyPrompt"
 	prompt.ActionText = settings.ActionText
-	prompt.ObjectText = settings.DisplayName
+	prompt.ObjectText = `{settings.DisplayName} • COST ${settings.Cost}`
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
 	prompt.HoldDuration = settings.HoldDuration
@@ -209,6 +215,7 @@ local function registerStore(register: BasePart, storeId: string)
 	local store: StoreRuntime = {
 		Id = storeId,
 		DisplayName = settings.DisplayName,
+		Cost = settings.Cost,
 		Reward = settings.Reward,
 		Duration = settings.Duration,
 		Cooldown = settings.Cooldown,
@@ -244,7 +251,7 @@ local function updateStores()
 				local remaining = math.max(1, math.ceil(store.EndsAt - now))
 				if remaining ~= store.LastDisplayedSecond then
 					store.LastDisplayedSecond = remaining
-					PlayerStateService.SetRobberyStatus(player, `Robbing {store.DisplayName}: {remaining}s`)
+					PlayerStateService.SetRobberyStatus(player, `Paid ${store.Cost} • Robbing {store.DisplayName}: {remaining}s`)
 				end
 			end
 		elseif store.State == "Cooldown" then

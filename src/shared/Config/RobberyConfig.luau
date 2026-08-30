@@ -7,6 +7,7 @@ local RobberyLocationConfig = require(script.Parent.RobberyLocationConfig)
 export type StoreSettings = {
 	DisplayName: string,
 	ActionText: string,
+	Cost: number,
 	Reward: number,
 	Duration: number,
 	Cooldown: number,
@@ -20,6 +21,7 @@ local stores: { [string]: StoreSettings } = {
 	QuickStop = {
 		DisplayName = "Quick Stop",
 		ActionText = "Rob Register",
+		Cost = 50,
 		Reward = 250,
 		Duration = 8,
 		Cooldown = 20,
@@ -34,6 +36,7 @@ for _, location in RobberyLocationConfig.Locations do
 	stores[location.Id] = {
 		DisplayName = location.DisplayName,
 		ActionText = location.ActionText,
+		Cost = location.Cost,
 		Reward = location.Reward,
 		Duration = location.Duration,
 		Cooldown = location.Cooldown,
